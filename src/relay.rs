@@ -90,6 +90,8 @@ async fn transfer_tcp(
     remote_socket: SocketAddr,
 ) -> Result<(), Box<dyn Error>> {
     let mut outbound = net::TcpStream::connect(remote_socket).await?;
+    inbound.set_nodelay(true)?;
+    outbound.set_nodelay(true)?;
     let (mut ri, mut wi) = inbound.split();
     let (mut ro, mut wo) = outbound.split();
 
