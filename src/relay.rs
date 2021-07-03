@@ -6,8 +6,9 @@ use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, RwLock};
 use tokio;
 use tokio::io;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net;
+use tokio::net::tcp::{ReadHalf, WriteHalf};
 
 use crate::resolver;
 use crate::udp;
@@ -96,16 +97,32 @@ async fn transfer_tcp(
     let (mut ro, mut wo) = outbound.split();
 
     let client_to_server = async {
-        io::copy(&mut ri, &mut wo).await?;
+        copy_tcp(&mut ri, &mut wo).await?;
         wo.shutdown().await
     };
 
     let server_to_client = async {
-        io::copy(&mut ro, &mut wi).await?;
+        copy_tcp(&mut ro, &mut wi).await?;
         wi.shutdown().await
     };
 
     try_join(client_to_server, server_to_client).await?;
 
+    Ok(())
+}
+
+const BUFFERSIZE: usize = 0x4000;
+
+async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()> {
+    let mut buf = vec![0u8; BUFFERSIZE];
+    let mut n: usize;
+    loop {
+        n = r.read(&mut buf).await?;
+        if n == 0 {
+            break;
+        }
+        w.write(&buf[..n]).await?;
+        w.flush().await?;
+    }
     Ok(())
 }
