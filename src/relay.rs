@@ -1,18 +1,19 @@
 use futures::future::join_all;
 use futures::future::try_join;
 use futures::FutureExt;
-use std::error::Error;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, RwLock};
 use tokio;
 use tokio::io;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net;
 use tokio::net::tcp::{ReadHalf, WriteHalf};
 
 use crate::resolver;
 use crate::udp;
 use realm::RelayConfig;
+
+extern crate libc;
 
 // Initialize DNS recolver
 // Set up channel between listener and resolver
@@ -86,10 +87,7 @@ pub async fn run(config: RelayConfig, remote_ip: Arc<RwLock<IpAddr>>) {
     }
 }
 
-async fn transfer_tcp(
-    mut inbound: net::TcpStream,
-    remote_socket: SocketAddr,
-) -> Result<(), Box<dyn Error>> {
+async fn transfer_tcp(mut inbound: net::TcpStream, remote_socket: SocketAddr) -> io::Result<()> {
     let mut outbound = net::TcpStream::connect(remote_socket).await?;
     inbound.set_nodelay(true)?;
     outbound.set_nodelay(true)?;
@@ -111,9 +109,15 @@ async fn transfer_tcp(
     Ok(())
 }
 
-const BUFFERSIZE: usize = 0x4000;
+const BUFFERSIZE: usize = if cfg!(not(target_os = "linux")) {
+    0x4000 // 16k read/write buffer
+} else {
+    0x10000 // 64k pipe buffer
+};
 
+#[cfg(not(target_os = "linux"))]
 async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()> {
+    use tokio::io::AsyncReadExt;
     let mut buf = vec![0u8; BUFFERSIZE];
     let mut n: usize;
     loop {
@@ -125,4 +129,87 @@ async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()>
         w.flush().await?;
     }
     Ok(())
+}
+
+// zero copy
+#[cfg(target_os = "linux")]
+async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()> {
+    use libc::{c_int, O_NONBLOCK};
+    use std::os::unix::prelude::AsRawFd;
+    // create pipe
+    let mut pipes = std::mem::MaybeUninit::<[c_int; 2]>::uninit();
+    let (rpipe, wpipe) = unsafe {
+        if libc::pipe2(pipes.as_mut_ptr() as *mut c_int, O_NONBLOCK) < 0 {
+            return Err(io::Error::new(io::ErrorKind::Other, "failed to call pipe"));
+        }
+        (pipes.assume_init()[0], pipes.assume_init()[1])
+    };
+    // get raw fd
+    let rfd = r.as_ref().as_raw_fd();
+    let wfd = w.as_ref().as_raw_fd();
+    let mut n: usize = 0;
+    let mut done = false;
+
+    'LOOP: loop {
+        // read until the socket buffer is empty
+        // or the pipe is filled
+        r.as_ref().readable().await?;
+        while n < BUFFERSIZE {
+            match splice_n(rfd, wpipe, BUFFERSIZE - n) {
+                x if x > 0 => n += x as usize,
+                x if x == 0 => {
+                    done = true;
+                    break;
+                }
+                x if x < 0 && is_wouldblock() => break,
+                _ => break 'LOOP,
+            }
+        }
+        // write until the pipe is empty
+        while n > 0 {
+            w.as_ref().writable().await?;
+            match splice_n(rpipe, wfd, n) {
+                x if x > 0 => n -= x as usize,
+                x if x < 0 && is_wouldblock() => {
+                    // clear readiness (EPOLLOUT)
+                    let _ = r.as_ref().try_write(&[0u8; 0]);
+                }
+                _ => break 'LOOP,
+            }
+        }
+        // complete
+        if done {
+            break;
+        }
+        // clear readiness (EPOLLIN)
+        let _ = r.as_ref().try_read(&mut [0u8; 0]);
+    }
+
+    unsafe {
+        libc::close(rpipe);
+        libc::close(wpipe);
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn splice_n(r: i32, w: i32, n: usize) -> isize {
+    use libc::{loff_t, SPLICE_F_MOVE, SPLICE_F_NONBLOCK};
+    unsafe {
+        libc::splice(
+            r,
+            0 as *mut loff_t,
+            w,
+            0 as *mut loff_t,
+            n,
+            SPLICE_F_MOVE | SPLICE_F_NONBLOCK,
+        )
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn is_wouldblock() -> bool {
+    use libc::{EAGAIN, EWOULDBLOCK};
+    let errno = unsafe { *libc::__errno_location() };
+    errno == EWOULDBLOCK || errno == EAGAIN
 }
