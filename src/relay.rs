@@ -20,7 +20,8 @@ extern crate libc;
 
 pub async fn start_relay(configs: Vec<RelayConfig>) {
     let default_ip: IpAddr = String::from("0.0.0.0").parse::<IpAddr>().unwrap();
-    let remote_addrs: Vec<String> = configs.iter().map(|x| x.remote_address.clone()).collect();
+    let remote_addrs: Vec<String> =
+        configs.iter().map(|x| x.remote_address.clone()).collect();
 
     let mut remote_ips: Vec<Arc<RwLock<std::net::IpAddr>>> = Vec::new();
     for _ in 0..remote_addrs.len() {
@@ -66,14 +67,19 @@ pub async fn run(config: RelayConfig, remote_ip: Arc<RwLock<IpAddr>>) {
     loop {
         match tcp_listener.accept().await {
             Ok((inbound, _)) => {
-                remote_socket = format!("{}:{}", &(remote_ip.read().unwrap()), config.remote_port)
-                    .parse()
-                    .unwrap();
-                let transfer = transfer_tcp(inbound, remote_socket.clone()).map(|r| {
-                    if let Err(_) = r {
-                        return;
-                    }
-                });
+                remote_socket = format!(
+                    "{}:{}",
+                    &(remote_ip.read().unwrap()),
+                    config.remote_port
+                )
+                .parse()
+                .unwrap();
+                let transfer = transfer_tcp(inbound, remote_socket.clone())
+                    .map(|r| {
+                        if let Err(_) = r {
+                            return;
+                        }
+                    });
                 tokio::spawn(transfer);
             }
             Err(e) => {
@@ -87,7 +93,10 @@ pub async fn run(config: RelayConfig, remote_ip: Arc<RwLock<IpAddr>>) {
     }
 }
 
-async fn transfer_tcp(mut inbound: net::TcpStream, remote_socket: SocketAddr) -> io::Result<()> {
+async fn transfer_tcp(
+    mut inbound: net::TcpStream,
+    remote_socket: SocketAddr,
+) -> io::Result<()> {
     let mut outbound = net::TcpStream::connect(remote_socket).await?;
     inbound.set_nodelay(true)?;
     outbound.set_nodelay(true)?;
@@ -116,7 +125,10 @@ const BUFFERSIZE: usize = if cfg!(not(target_os = "linux")) {
 };
 
 #[cfg(not(target_os = "linux"))]
-async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()> {
+async fn copy_tcp(
+    r: &mut ReadHalf<'_>,
+    w: &mut WriteHalf<'_>,
+) -> io::Result<()> {
     use tokio::io::AsyncReadExt;
     let mut buf = vec![0u8; BUFFERSIZE];
     let mut n: usize;
@@ -133,14 +145,20 @@ async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()>
 
 // zero copy
 #[cfg(target_os = "linux")]
-async fn copy_tcp(r: &mut ReadHalf<'_>, w: &mut WriteHalf<'_>) -> io::Result<()> {
+async fn copy_tcp(
+    r: &mut ReadHalf<'_>,
+    w: &mut WriteHalf<'_>,
+) -> io::Result<()> {
     use libc::{c_int, O_NONBLOCK};
     use std::os::unix::prelude::AsRawFd;
     // create pipe
     let mut pipes = std::mem::MaybeUninit::<[c_int; 2]>::uninit();
     let (rpipe, wpipe) = unsafe {
         if libc::pipe2(pipes.as_mut_ptr() as *mut c_int, O_NONBLOCK) < 0 {
-            return Err(io::Error::new(io::ErrorKind::Other, "failed to call pipe"));
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "failed to call pipe",
+            ));
         }
         (pipes.assume_init()[0], pipes.assume_init()[1])
     };

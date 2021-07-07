@@ -1,6 +1,6 @@
 [package]
 name = "realm"
-version = "1.2.1"
+version = "1.3.0"
 authors = ["zhboner <zhboner@gmail.com>"]
 edition = "2018"
 
@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2"
-tokio = { version = "1.5", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 trust-dns-resolver = "0.20"
 futures = "0.3"
 structopt = "0.3"

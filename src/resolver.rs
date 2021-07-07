@@ -9,7 +9,10 @@ fn need_resolve(addr: &str) -> bool {
     addr.parse::<net::IpAddr>().is_err()
 }
 
-async fn resolve_single(resolver: &TokioAsyncResolver, addr: &String) -> Option<net::IpAddr> {
+async fn resolve_single(
+    resolver: &TokioAsyncResolver,
+    addr: &String,
+) -> Option<net::IpAddr> {
     if !need_resolve(&addr) {
         return Some(addr.parse::<net::IpAddr>().unwrap());
     }
@@ -30,11 +33,18 @@ async fn resolve_single(resolver: &TokioAsyncResolver, addr: &String) -> Option<
     }
 }
 
-pub async fn resolve(addr_list: Vec<String>, ip_list: Vec<Arc<RwLock<net::IpAddr>>>) {
-    let resolver =
-        async { TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default()) }
-            .await
-            .unwrap();
+pub async fn resolve(
+    addr_list: Vec<String>,
+    ip_list: Vec<Arc<RwLock<net::IpAddr>>>,
+) {
+    let resolver = async {
+        TokioAsyncResolver::tokio(
+            ResolverConfig::default(),
+            ResolverOpts::default(),
+        )
+    }
+    .await
+    .unwrap();
     let cache = "0.0.0.0".parse::<net::IpAddr>().unwrap();
     let size = addr_list.len();
     let mut cache_list = vec![cache.clone(); size];
@@ -54,11 +64,5 @@ pub async fn resolve(addr_list: Vec<String>, ip_list: Vec<Arc<RwLock<net::IpAddr
         }
 
         sleep(Duration::from_secs(60 * 60 * 6)).await;
-    }
-}
-
-pub fn print_ips(ip_list: &Vec<Arc<RwLock<std::net::IpAddr>>>) {
-    for ip in ip_list {
-        println!("{}", ip.read().unwrap());
     }
 }
