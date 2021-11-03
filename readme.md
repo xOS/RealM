@@ -2,7 +2,7 @@
 
 [中文说明](https://zhb.me/realm)
 
-<p align="center"><img src="https://raw.githubusercontent.com/zhboner/realm/master/realm.png"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/xOS/RealM/master/realm.png"/></p>
 
 ## Introduction
 
@@ -12,6 +12,18 @@ realm is a simple, high performance relay server written in rust.
 - Zero configuration. Setup and run in one command.
 - Concurrency. Bidirectional concurrent traffic leads to high performance.
 - Low resources cost.
+
+## 安装脚本使用
+> 脚本根据 seal0207 的修改
+国外
+```bash
+wget -N --no-check-certificate https://raw.githubusercontent.com/xOS/RealM/master/realm.sh && chmod +x realm.sh && ./realm.sh
+```
+
+国内
+```bash
+wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/xOS/RealM@master/realm.sh && chmod +x realm.sh && ./realm.sh
+```
 
 ## Usage
 ```shell

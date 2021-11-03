@@ -2,7 +2,7 @@ name: release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*'
 
 jobs:
   release-corss:
@@ -11,15 +11,18 @@ jobs:
       matrix:
         target:
           - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - x86_64-pc-windows-gnu
+          - arm-unknown-linux-gnueabi
+          - aarch64-unknown-linux-gnu
+          - i686-unknown-linux-gnu
         include:
           - target: x86_64-unknown-linux-gnu
             output: realm
-          - target: x86_64-unknown-linux-musl
+          - target: aarch64-unknown-linux-gnu
             output: realm
-          - target: x86_64-pc-windows-gnu
-            output: realm.exe
+          - target: arm-unknown-linux-gnueabi
+            output: realm
+          - target: i686-unknown-linux-gnu
+            output: realm
     steps:
       - uses: actions/checkout@v2
       - name: install toolchain
