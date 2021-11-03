@@ -168,7 +168,7 @@ Stop_RealM(){
     sleep 3s
     start_menu
     else
-    echo -e "-------${Red_font_prefix}RealM没有安装,停止个锤子！${Font_color_suffix}-------"    
+    echo -e "-------${Red_font_prefix}RealM 没有安装,停止个锤子！${Font_color_suffix}-------"    
     sleep 3s
     start_menu
     fi
@@ -179,12 +179,12 @@ Restart_RealM(){
     if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a /etc/realm/config.json;then
     `systemctl restart realm`
     echo "------------------------------"
-    echo -e "-------${Green_font_prefix} RealM重启成功! ${Font_color_suffix}-------"
+    echo -e "-------${Green_font_prefix} RealM 重启成功! ${Font_color_suffix}-------"
     echo "------------------------------"
     sleep 3s
     start_menu
     else
-    echo -e "-------${Red_font_prefix}RealM没有安装,重启个锤子！${Font_color_suffix}-------"    
+    echo -e "-------${Red_font_prefix}RealM 没有安装,重启个锤子！${Font_color_suffix}-------"    
     sleep 3s
     start_menu
     fi
@@ -457,14 +457,14 @@ Status_RealM(){
 #删除RealM配置
 Rewrite_RealM(){
   rm -rf /etc/realm/rawconf
-  rm -rf /etc/realm/config
+  rm -rf /etc/realm/config.json
   read -p "删除成功,输入任意键按回车返回主菜单"
   start_menu
 }
 
 #重载RealM配置
 Reload_RealM(){
-  rm -rf /etc/realm/config
+  rm -rf /etc/realm/config.json
   start_conf
   localport_conf
   addresses_conf
@@ -492,7 +492,7 @@ Time_Task(){
   " type_num
   case "$type_num" in
 	1)
-  echo -e "请设置每多少分钟重启Realm任务"	
+  echo -e "请设置每多少分钟重启RealM任务"	
   read -p "请设置分钟数:
   " type_m
   echo "*/$type_m * * * *  /usr/bin/systemctl restart realm" >> /var/spool/cron/crontabs/root
@@ -500,7 +500,7 @@ Time_Task(){
   systemctl restart cron 
 	;;
 	2)
-  echo -e "请设置每多少小时重启Realm任务"	
+  echo -e "请设置每多少小时重启RealM任务"	
   read -p "请设置小时数:
   " type_h
   echo "0 0 */$type_h * * ? * /usr/bin/systemctl restart realm" >> /var/spool/cron/crontabs/root
@@ -508,7 +508,7 @@ Time_Task(){
   systemctl restart cron
 	;;
 	3)
-  echo -e "请设置每多少天重启Realm任务"	
+  echo -e "请设置每多少天重启RealM任务"	
   read -p "请设置天数:
   " type_d
   echo "0 0 /$type_d * * /usr/bin/systemctl restart realm" >> /var/spool/cron/crontabs/root
@@ -564,7 +564,7 @@ echo -e "
  ${Green_font_prefix}9.${Font_color_suffix} 删除 RealM 转发规则
  ${Green_font_prefix}10.${Font_color_suffix} 退出脚本
  ${Green_font_prefix}11.${Font_color_suffix} 备份/恢复配置
- ${Green_font_prefix}12.${Font_color_suffix} 添加定时重启任务(因Realm存在软件暴毙情况,添加定时任务是必要的！重启也就1秒,确保转发正常运行！)"
+ ${Green_font_prefix}12.${Font_color_suffix} 添加定时重启任务(因RealM存在软件暴毙情况,添加定时任务是必要的！重启也就1秒,确保转发正常运行！)"
  check_status
 
 read -p " 请输入数字后[0-12] 按回车键:
