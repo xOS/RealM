@@ -94,7 +94,7 @@ start_menu
 }
 #获取 ReamlM 进程 ID
 check_pid(){
-	PID=$(ps -ef| grep "ream"| grep -v grep| grep -v ".sh"| grep -v "init.d"| grep -v "service"| awk '{print $2}')
+	PID=$(ps -ef| grep "ream"| grep -v grep | awk '{print $2}')
 }
 #更新 ReamlM
 Update_RealM(){
