@@ -49,7 +49,7 @@ pub fn scan() -> CmdInput {
         .subcommand(
             SubCommand::with_name("nav")
                 .about("An Interactive configuration editor")
-                .version("0.1.0")
+                .version("1.5.0")
                 .author("zephyr <i@zephyr.moe>"),
         )
         .get_matches();
