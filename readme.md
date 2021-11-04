@@ -15,6 +15,8 @@ realm is a simple, high performance relay server written in rust.
 
 ## 安装脚本使用
 > 脚本根据 seal0207 的修改
+
+
 国外
 ```bash
 wget -N --no-check-certificate https://raw.githubusercontent.com/xOS/RealM/master/realm.sh && chmod +x realm.sh && ./realm.sh
