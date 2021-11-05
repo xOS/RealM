@@ -27,8 +27,8 @@ cargo build --release --no-default-features
 cargo build --release --no-default-features --features udp, tfo, zero-copy
 ```
 
-## 安装脚本使用
-> 脚本根据 seal0207 的修改
+## 安装脚本
+> 脚本根据 seal0207 版修改
 
 国外
 ```bash
