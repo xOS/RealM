@@ -1,8 +1,5 @@
-![realm](https://github.com/zhboner/realm/workflows/realm/badge.svg)
-
-[中文说明](https://zhb.me/realm)
-
-<p align="center"><img src="https://raw.githubusercontent.com/xOS/RealM/master/realm.png"/></p>
+# RealM
+> A network relay tool
 
 ## Introduction
 
