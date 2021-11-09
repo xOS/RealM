@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.0.0"
+sh_ver="1.0.1"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -38,7 +38,8 @@ check_sys(){
 Installation_dependency(){
     echo -e "${Info} 开始安装依赖..."
 	if [[ ${release} == "centos" ]]; then
-		yum update && yum install gzip wget curl unzip jq -y
+		yum install epel-release -y && yum update
+        yum install gzip wget curl unzip jq -y
 	else
 		apt-get update && apt-get install gzip wget curl unzip jq -y
 	fi
