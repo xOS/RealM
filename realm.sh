@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.0.1"
+sh_ver="1.0.2"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -101,7 +101,7 @@ Type=simple
 User=root
 Restart=on-failure
 RestartSec=5s
-DynamicUser=true
+# DynamicUser=true
 ExecStart=/usr/local/bin/realm -c /etc/realm/config.json
 
 [Install]
@@ -305,7 +305,7 @@ start_conf(){
 
 #写入查询配置
 Write_rawconf(){
-    echo $lport"/"$ip"#"$port >> $raw_conf_path
+    echo $lport"/"$ip"#"$port\n>> $raw_conf_path
 }
 
 #赋值
