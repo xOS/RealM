@@ -305,7 +305,7 @@ start_conf(){
 
 #写入查询配置
 Write_rawconf(){
-    echo $lport"/"$ip"#"$port\n>> $raw_conf_path
+    echo $lport"/"$ip"#"$port >> $raw_conf_path
 }
 
 #赋值
