@@ -9,31 +9,56 @@ edition = "2018"
 [dependencies]
 cfg-if = "1"
 futures = "0.3"
+log = "0.4"
 
-clap = "2"
+clap = "3.0.0-beta.5"
+toml = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-tokio = { version = "1.12", features = ["rt", "rt-multi-thread", "io-util", "net", "time"] }
-trust-dns-resolver = "0.20"
+tokio = { version = "1", features = ["rt", "io-util", "net", "time"] }
+trust-dns-resolver = { version = "0.20", optional = true }
 
+pin-project = "1"
 lazy_static = "1"
 
 # tfo
-tokio-tfo = { git = "https://github.com/zephyrchien/tokio-tfo", branch = "main", version = "0.1.4", optional = true }
+tokio-tfo = { git = "https://github.com/zephyrchien/tokio-tfo", branch = "main", version = "0.1.6", optional = true }
 
 # zero-copy
 libc = { version = "0.2", optional = true }
 
+# logger
+chrono = "0.4"
+fern = "0.6"
+
+# malloc
+mimalloc = { version = "0.1", optional = true }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+jemallocator = {version = "0.3", optional = true }
+
+# deamon
+[target.'cfg(unix)'.dependencies]
+daemonize = "0.4"
+
 [profile.release]
 opt-level = 3
 lto = true
+panic = "abort"
 
 [profile.dev]
 opt-level = 0
 
 [features]
-default = ["udp", "tfo", "zero-copy"]
+default = ["udp", "zero-copy", "trust-dns", "multi-thread" ]
 udp = []
 tfo = ["tokio-tfo"]
 zero-copy = ["libc"]
+trust-dns = ["trust-dns-resolver"]
+multi-thread = ["tokio/rt-multi-thread"]
+jemalloc = ["jemallocator"]
+mi-malloc = ["mimalloc"]
+
+[dev-dependencies]
+env_logger = "0.9"
