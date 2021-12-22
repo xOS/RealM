@@ -24,8 +24,6 @@ jobs:
           - arm-unknown-linux-gnueabi
           - aarch64-unknown-linux-gnu
           - i686-unknown-linux-gnu
-	  - target: x86_64-pc-windows-gnu
-            output: realm.exe
         include:
           - target: x86_64-unknown-linux-gnu
             output: realm
@@ -35,8 +33,6 @@ jobs:
             output: realm
           - target: i686-unknown-linux-gnu
             output: realm
-	  - target: x86_64-pc-windows-gnu
-            output: realm.exe
     steps:
       - uses: actions/checkout@v2
       - name: install toolchain
