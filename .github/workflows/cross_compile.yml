@@ -24,6 +24,7 @@ jobs:
           - arm-unknown-linux-gnueabi
           - aarch64-unknown-linux-gnu
           - i686-unknown-linux-gnu
+          - x86_64-pc-windows-gnu
         include:
           - target: x86_64-unknown-linux-gnu
             output: realm
@@ -32,6 +33,8 @@ jobs:
           - target: arm-unknown-linux-gnueabi
             output: realm
           - target: i686-unknown-linux-gnu
+            output: realm
+          - target: x86_64-pc-windows-gnu
             output: realm
     steps:
       - uses: actions/checkout@v2
