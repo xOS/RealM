@@ -35,7 +35,7 @@ jobs:
           - target: i686-unknown-linux-gnu
             output: realm
           - target: x86_64-pc-windows-gnu
-            output: realm
+            output: realm.exe
     steps:
       - uses: actions/checkout@v2
       - name: install toolchain
