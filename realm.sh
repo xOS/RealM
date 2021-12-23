@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.0.2"
+sh_ver="1.0.3"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -101,13 +101,11 @@ Type=simple
 User=root
 Restart=on-failure
 RestartSec=5s
-# DynamicUser=true
 ExecStart=/usr/local/bin/realm -c /etc/realm/config.json
 
 [Install]
 WantedBy=multi-user.target' > /etc/systemd/system/realm.service
 systemctl enable --now realm
-Set_dns
 Write_config
     echo "------------------------------"
     if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
@@ -223,7 +221,7 @@ Restart_RealM(){
 
 Write_config(){
 	cat > ${realm_conf_path}<<-EOF
-{"dns_mode":"${dns}","endpoints":[]}
+{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_only","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53"]},"network":{"use_udp":true,"fast_open":true,"zero_copy":false,"tcp_timeout":300,"udp_timeout":30},"endpoints":[]}
 EOF
 }
 
@@ -238,22 +236,81 @@ Set_dns(){
 ==============================
  ${Tip} 如不知道如何选择直接回车即可 !" && echo
 	read -e -p "(默认: 4. IPv4 优先 + IPv6 模式):" dns
+    tmp=$(mktemp)
 	[[ -z "${dns}" ]] && dns="4"
 	if [[ ${dns} == "1" ]]; then
-		dns="ipv4_only"
+        jq '.dns.mode = "ipv4_only"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	elif [[ ${dns} == "2" ]]; then
-		dns="ipv6_only"
+        jq '.dns.mode = "ipv6_only"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	elif [[ ${dns} == "3" ]]; then
-		dns="ipv4_and_ipv6"
+        jq '.dns.mode = "ipv4_and_ipv6"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	elif [[ ${dns} == "4" ]]; then
-		dns="ipv4_then_ipv6"
+        jq '.dns.mode = "ipv4_then_ipv6"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
     elif [[ ${dns} == "5" ]]; then
-		dns="ipv6_then_ipv4"
+        jq '.dns.mode = "ipv6_then_ipv4"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	else
-		dns="ipv4_then_ipv6"
+        jq '.dns.mode = "ipv4_then_ipv6"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	fi
+    Restart_RealM
 	echo && echo "=============================="
 	echo -e "	DNS 模式 : ${Red_background_prefix} ${dns} ${Font_color_suffix}"
+	echo "==============================" && echo
+}
+
+Set_udp(){
+	echo -e "是否开启 UDP ？
+==============================
+${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Font_color_suffix} 关闭
+=============================="
+	read -e -p "(默认：1.开启)：" udp
+    tmp=$(mktemp)
+	[[ -z "${udp}" ]] && udp="1"
+	if [[ ${udp} == "1" ]]; then
+        jq '.network.use_udp = true' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	else
+        jq '.network.use_udp = false' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	fi
+    Restart_RealM
+	echo && echo "=============================="
+	echo -e "UDP 开启状态：${Red_background_prefix} ${udp} ${Font_color_suffix}"
+	echo "==============================" && echo
+}
+
+Set_tfo(){
+	echo -e "是否开启 TFO ？
+==============================
+${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Font_color_suffix} 关闭
+=============================="
+	read -e -p "(默认：1.开启)：" tfo
+    tmp=$(mktemp)
+	[[ -z "${tfo}" ]] && tfo="1"
+	if [[ ${tfo} == "1" ]]; then
+        jq '.network.fast_open = true' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	else
+        jq '.network.fast_open = false' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	fi
+    Restart_RealM
+	echo && echo "=============================="
+	echo -e "TFO 开启状态：${Red_background_prefix} ${tfo} ${Font_color_suffix}"
+	echo "==============================" && echo
+}
+
+Set_zoc(){
+	echo -e "是否开启 ZOC（Zero Cpoy） ？
+==============================
+${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Font_color_suffix} 关闭
+=============================="
+	read -e -p "(默认：1.开启)：" zoc
+    tmp=$(mktemp)
+	[[ -z "${zoc}" ]] && zoc="1"
+	if [[ ${zoc} == "1" ]]; then
+        jq '.network.zero_copy = true' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	else
+        jq '.network.zero_copy = false' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	fi
+    Restart_RealM
+	echo && echo "=============================="
+	echo -e "ZOC（Zero Cpoy）开启状态：${Red_background_prefix} ${zoc} ${Font_color_suffix}"
 	echo "==============================" && echo
 }
 
@@ -275,30 +332,12 @@ read -e -p " 请输入远程端口[1-65535] (支持端口段如1-100，数量需
 [[ -z "${port}" ]] && echo "取消..." && exit 1
 }
 
-Set_udp(){
-	echo -e "是否开启 UDP ？
-==============================
-${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Font_color_suffix} 关闭
-=============================="
-	read -e -p "(默认：1.开启)：" udp
-	[[ -z "${udp}" ]] && udp="1"
-	if [[ ${udp} == "1" ]]; then
-		udp=true
-	else
-		udp=false
-	fi
-	echo && echo "=============================="
-	echo -e "UDP 开启状态：${Red_background_prefix} ${udp} ${Font_color_suffix}"
-	echo "==============================" && echo
-}
-
 #配置转发
 start_conf(){
-    JSON='{"local":"0.0.0.0:lport","remote":"ip:port","udp":udpm}'
+    JSON='{"listen":"0.0.0.0:lport","remote":"ip:port"}'
 	JSON=${JSON/lport/$lport};
 	JSON=${JSON/ip/$ip};
 	JSON=${JSON/port/$port};
-	JSON=${JSON/udpm/$udp};
 	temp=`jq --argjson data $JSON '.endpoints += [$data]' $realm_conf_path`
 	echo $temp > $realm_conf_path
 }
@@ -323,7 +362,6 @@ Set_Config(){
 Set_listening_ports
 Set_remote_addresses
 Set_remote_ports
-Set_udp
 	echo && echo -e "==============================
 	请检查 RealM 转发规则配置是否有误 !\n
 	本地 端口: ${Green_font_prefix}${lport}${Font_color_suffix}
@@ -453,6 +491,39 @@ Recovey(){
 	fi
 }
 
+#修改转发配置
+Set_Conf(){
+clear
+echo -e "
+ ==============================
+ ${Green_font_prefix}1.${Font_color_suffix} DNS 模式
+ ${Green_font_prefix}2.${Font_color_suffix} UDP 配置
+ ${Green_font_prefix}3.${Font_color_suffix} TFO 配置
+ ${Green_font_prefix}4.${Font_color_suffix} ZOC 配置
+ =============================="
+echo
+ read -p " 请输入数字后[1-4] 按回车键:" num3
+ case "$num3" in
+	1)
+     Set_dns
+	;;
+	2)
+     Set_udp
+	;;
+	3)
+     Set_tfo
+	;;
+    4)
+     Set_zoc
+	;;
+	*)
+    clear
+	esac
+	echo -e "${Error}:请输入正确数字 [1-4] 按回车键"
+	sleep 2s
+	Set_Conf
+}
+
 #备份/恢复配置
 Backup_Recovey(){
 clear
@@ -570,7 +641,7 @@ sysArch
 clear
 echo
 echo "###############################"
-echo "#        RealM 一键脚本       #"
+echo "#        RealM 管理脚本       #"
 echo "###############################"
 echo -e "
  当前版本 ${Red_font_prefix}[v${sh_ver}]${Font_color_suffix}
@@ -587,12 +658,15 @@ echo -e "
  ${Green_font_prefix}8.${Font_color_suffix} 添加 RealM 转发规则
  ${Green_font_prefix}9.${Font_color_suffix} 查看 RealM 转发规则
  ${Green_font_prefix}10.${Font_color_suffix} 删除 RealM 转发规则
+ ==============================
  ${Green_font_prefix}11.${Font_color_suffix} 退出脚本
- ${Green_font_prefix}12.${Font_color_suffix} 备份/恢复配置
- ${Green_font_prefix}13.${Font_color_suffix} 添加定时重启任务"
+ ==============================
+ ${Green_font_prefix}12.${Font_color_suffix} 修改配置
+ ${Green_font_prefix}13.${Font_color_suffix} 备份/恢复配置
+ ${Green_font_prefix}14.${Font_color_suffix} 添加定时重启任务"
  check_status
 
-read -p " 请输入数字后[0-13] 按回车键:
+read -p " 请输入数字后[0-14] 按回车键:
 " num
 case "$num" in
 	1)
@@ -632,14 +706,17 @@ case "$num" in
 	Update_Shell
 	;;
 	12)
+	Set_Conf
+    ;;
+	13)
 	Backup_Recovey
 	;;
-	13)
+	14)
 	Time_Task
 	;;	
 	*)	
 	clear
-	echo -e "${Error}:请输入正确数字 [0-12] 按回车键"
+	echo -e "${Error}:请输入正确数字 [0-14] 按回车键"
 	sleep 2s
 	start_menu
 	;;
