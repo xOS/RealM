@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.0.3"
+sh_ver="1.0.4"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -221,7 +221,7 @@ Restart_RealM(){
 
 Write_config(){
 	cat > ${realm_conf_path}<<-EOF
-{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_only","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53"]},"network":{"use_udp":true,"fast_open":true,"zero_copy":false,"tcp_timeout":300,"udp_timeout":30},"endpoints":[]}
+{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_only","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53","2001:4860:4860::8888:53","2001:4860:4860::8844:53"]},"network":{"use_udp":true,"fast_open":true,"zero_copy":false,"tcp_timeout":300,"udp_timeout":30},"endpoints":[]}
 EOF
 }
 
@@ -230,14 +230,14 @@ Set_dns(){
 ==============================	
  ${Green_font_prefix} 1.${Font_color_suffix} 仅 IPv4 模式
  ${Green_font_prefix} 2.${Font_color_suffix} 仅 IPv6 模式
- ${Green_font_prefix} 3.${Font_color_suffix} IPv4 + IPv6 模式
- ${Green_font_prefix} 4.${Font_color_suffix} IPv4 优先 + IPv6 模式 ${Red_font_prefix}(默认)${Font_color_suffix}
+ ${Green_font_prefix} 3.${Font_color_suffix} IPv4 + IPv6 模式 ${Red_font_prefix}(默认)${Font_color_suffix}
+ ${Green_font_prefix} 4.${Font_color_suffix} IPv4 优先 + IPv6 模式
  ${Green_font_prefix} 5.${Font_color_suffix} IPv6 优先 + IPv4 模式
 ==============================
  ${Tip} 如不知道如何选择直接回车即可 !" && echo
-	read -e -p "(默认: 4. IPv4 优先 + IPv6 模式):" dns
+	read -e -p "(默认: 3. IPv4 + IPv6 模式):" dns
     tmp=$(mktemp)
-	[[ -z "${dns}" ]] && dns="4"
+	[[ -z "${dns}" ]] && dns="3"
 	if [[ ${dns} == "1" ]]; then
         jq '.dns.mode = "ipv4_only"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	elif [[ ${dns} == "2" ]]; then
@@ -249,7 +249,7 @@ Set_dns(){
     elif [[ ${dns} == "5" ]]; then
         jq '.dns.mode = "ipv6_then_ipv4"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	else
-        jq '.dns.mode = "ipv4_then_ipv6"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+        jq '.dns.mode = "ipv4_and_ipv6"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	fi
     Restart_RealM
 	echo && echo "=============================="
