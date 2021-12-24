@@ -221,7 +221,7 @@ Restart_RealM(){
 
 Write_config(){
 	cat > ${realm_conf_path}<<-EOF
-{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_only","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53","2001:4860:4860::8888:53","2001:4860:4860::8844:53"]},"network":{"use_udp":true,"fast_open":true,"zero_copy":false,"tcp_timeout":300,"udp_timeout":30},"endpoints":[]}
+{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_and_ipv6","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53","2001:4860:4860::8888:53","2001:4860:4860::8844:53"]},"network":{"use_udp":true,"fast_open":true,"zero_copy":false,"tcp_timeout":300,"udp_timeout":30},"endpoints":[]}
 EOF
 }
 
