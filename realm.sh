@@ -126,7 +126,7 @@ check_status(){
 	status=`systemctl status realm | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1`
 }
 
-#更新 ReamlM
+#更新 RealM
 Update_RealM(){
     new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
 	now_ver=$(cat ${now_ver_file})
