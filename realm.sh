@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.0.4"
+sh_ver="1.1.0"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -73,7 +73,7 @@ check_status(){
     fi
 }
 
-#安装RealM
+# 安装RealM
 Install_RealM(){
   if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
   echo "≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡"
@@ -84,7 +84,7 @@ Install_RealM(){
   fi
   Installation_dependency
   echo -e "${Info} 开始安装 RealM 主程序..."
-  new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| grep "tag_name"| head -n 1| awk -F ":" '{print $2}'| sed 's/\"//g;s/,//g;s/ //g')
+  new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
   mkdir /etc/realm
   wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv realm /usr/local/bin/realm 
   echo "${new_ver}" > ${now_ver_file}
@@ -121,21 +121,22 @@ Write_config
 sleep 3s
 start_menu
 }
-#获取 ReamlM 进程 ID
-check_pid(){
-	PID=$(ps -ef| grep "ream" | awk '{print $2}')
+
+check_status(){
+	status=`systemctl status realm | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1`
 }
+
 #更新 ReamlM
 Update_RealM(){
-    new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| grep "tag_name"| head -n 1| awk -F ":" '{print $2}'| sed 's/\"//g;s/,//g;s/ //g')
+    new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
 	now_ver=$(cat ${now_ver_file})
 	if [[ "${now_ver}" != "${new_ver}" ]]; then
 		echo -e "${Info} 发现 RealM 已有新版本 [ ${new_ver} ]，旧版本 [ ${now_ver} ]"
 		read -e -p "是否更新 ? [Y/n] :" yn
 		[[ -z "${yn}" ]] && yn="y"
 		if [[ $yn == [Yy] ]]; then
-			check_pid
-			[[ ! -z $PID ]] && kill -9 ${PID}
+			check_status
+			[[ "$status" == "running" ]] && systemctl stop snell-server
 			wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm /usr/local/bin/realm && systemctl restart realm
             echo "${new_ver}" > ${now_ver_file}
             echo -e "-------${Green_font_prefix} RealM 更新成功! ${Font_color_suffix}-------"
@@ -221,7 +222,7 @@ Restart_RealM(){
 
 Write_config(){
 	cat > ${realm_conf_path}<<-EOF
-{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_and_ipv6","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53","2001:4860:4860::8888:53","2001:4860:4860::8844:53"]},"network":{"use_udp":true,"fast_open":true,"zero_copy":false,"tcp_timeout":300,"udp_timeout":30},"endpoints":[]}
+{"log":{"level":"warn","output":"/var/log/realm.log"},"dns":{"mode":"ipv4_then_ipv6","protocol":"tcp_and_udp","nameservers":["8.8.8.8:53","8.8.4.4:53","2001:4860:4860::8888:53","2001:4860:4860::8844:53"],"min_ttl":600,"max_ttl":3600,"cache_size":256},"network":{"use_udp":true,"zero_copy":true,"fast_open":true,"tcp_timeout":300,"udp_timeout":30,"send_proxy":false,"send_proxy_version":2,"accept_proxy":false,"accept_proxy_timeout":5},"endpoints":[]}
 EOF
 }
 
@@ -257,6 +258,32 @@ Set_dns(){
 	echo "==============================" && echo
 }
 
+Set_protocol(){
+	echo -e "请选择 DNS 协议
+==============================	
+ ${Green_font_prefix} 1.${Font_color_suffix} 仅 TCP 协议
+ ${Green_font_prefix} 2.${Font_color_suffix} 仅 UDP 协议
+ ${Green_font_prefix} 3.${Font_color_suffix} TCP + UDP 协议 ${Red_font_prefix}(默认)${Font_color_suffix}
+==============================
+ ${Tip} 如不知道如何选择直接回车即可 !" && echo
+	read -e -p "(默认: 3. TCP + UDP 协议):" dns
+    tmp=$(mktemp)
+	[[ -z "${dns}" ]] && dns="3"
+	if [[ ${dns} == "1" ]]; then
+        jq '.dns.protocol = "tcp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	elif [[ ${dns} == "2" ]]; then
+        jq '.dns.protocol = "udp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	elif [[ ${dns} == "3" ]]; then
+        jq '.dns.protocol = "tcp_and_udp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+    else
+        jq '.dns.protocol = "tcp_and_udp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+	fi
+    Restart_RealM
+	echo && echo "=============================="
+	echo -e "	DNS 协议 : ${Red_background_prefix} ${dns} ${Font_color_suffix}"
+	echo "==============================" && echo
+}
+
 Set_udp(){
 	echo -e "是否开启 UDP ？
 ==============================
@@ -277,7 +304,7 @@ ${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Fon
 }
 
 Set_tfo(){
-	echo -e "是否开启 TFO ？
+	echo -e "是否开启 TCP Fast Open ？
 ==============================
 ${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Font_color_suffix} 关闭
 =============================="
@@ -291,12 +318,12 @@ ${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Fon
 	fi
     Restart_RealM
 	echo && echo "=============================="
-	echo -e "TFO 开启状态：${Red_background_prefix} ${tfo} ${Font_color_suffix}"
+	echo -e "TCP Fast Open 开启状态：${Red_background_prefix} ${tfo} ${Font_color_suffix}"
 	echo "==============================" && echo
 }
 
 Set_zoc(){
-	echo -e "是否开启 ZOC（Zero Cpoy） ？
+	echo -e "是否开启 Zero Cpoy ？
 ==============================
 ${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Font_color_suffix} 关闭
 =============================="
@@ -310,7 +337,7 @@ ${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Fon
 	fi
     Restart_RealM
 	echo && echo "=============================="
-	echo -e "ZOC（Zero Cpoy）开启状态：${Red_background_prefix} ${zoc} ${Font_color_suffix}"
+	echo -e "Zero Cpoy 开启状态：${Red_background_prefix} ${zoc} ${Font_color_suffix}"
 	echo "==============================" && echo
 }
 
@@ -498,8 +525,9 @@ echo -e "
  ==============================
  ${Green_font_prefix}1.${Font_color_suffix} DNS 模式
  ${Green_font_prefix}2.${Font_color_suffix} UDP 配置
- ${Green_font_prefix}3.${Font_color_suffix} TFO 配置
- ${Green_font_prefix}4.${Font_color_suffix} ZOC 配置
+ ${Green_font_prefix}3.${Font_color_suffix} DNS 协议
+ ${Green_font_prefix}4.${Font_color_suffix} TFO 配置
+ ${Green_font_prefix}5.${Font_color_suffix} ZOC 配置
  =============================="
 echo
  read -p " 请输入数字后[1-4] 按回车键:" num3
@@ -510,16 +538,19 @@ echo
 	2)
      Set_udp
 	;;
-	3)
+    3)
+     Set_protocol
+	;;
+	4)
      Set_tfo
 	;;
-    4)
+    5)
      Set_zoc
 	;;
 	*)
     clear
 	esac
-	echo -e "${Error}:请输入正确数字 [1-4] 按回车键"
+	echo -e "${Error}:请输入正确数字 [1-5] 按回车键"
 	sleep 2s
 	Set_Conf
 }
