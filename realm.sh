@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.1.1"
+sh_ver="1.1.2"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -266,21 +266,21 @@ Set_protocol(){
  ${Green_font_prefix} 3.${Font_color_suffix} TCP + UDP 协议 ${Red_font_prefix}(默认)${Font_color_suffix}
 ==============================
  ${Tip} 如不知道如何选择直接回车即可 !" && echo
-	read -e -p "(默认: 3. TCP + UDP 协议):" dns
+	read -e -p "(默认: 3. TCP + UDP 协议):" protocol
     tmp=$(mktemp)
-	[[ -z "${dns}" ]] && dns="3"
-	if [[ ${dns} == "1" ]]; then
+	[[ -z "${protocol}" ]] && protocol="3"
+	if [[ ${protocol} == "1" ]]; then
         jq '.dns.protocol = "tcp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
-	elif [[ ${dns} == "2" ]]; then
+	elif [[ ${protocol} == "2" ]]; then
         jq '.dns.protocol = "udp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
-	elif [[ ${dns} == "3" ]]; then
+	elif [[ ${protocol} == "3" ]]; then
         jq '.dns.protocol = "tcp_and_udp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
     else
         jq '.dns.protocol = "tcp_and_udp"' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	fi
     Restart_RealM
 	echo && echo "=============================="
-	echo -e "	DNS 协议 : ${Red_background_prefix} ${dns} ${Font_color_suffix}"
+	echo -e "	DNS 协议 : ${Red_background_prefix} ${protocol} ${Font_color_suffix}"
 	echo "==============================" && echo
 }
 
