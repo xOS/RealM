@@ -10,9 +10,15 @@ pub struct EndpointConf {
     pub remote: String,
 
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub through: Option<String>,
 
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface: Option<String>,
+
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Config::is_empty")]
     pub network: NetConf,
 }
 
@@ -61,12 +67,20 @@ impl EndpointConf {
 impl Config for EndpointConf {
     type Output = Endpoint;
 
+    fn is_empty(&self) -> bool {
+        false
+    }
+
     fn build(self) -> Self::Output {
         let local = self.build_local();
         let remote = self.build_remote();
+
         let through = self.build_send_through();
+        // iface is untested
+
         let mut conn_opts = self.network.build();
         conn_opts.send_through = through;
+        conn_opts.bind_interface = self.interface;
         Endpoint::new(local, remote, conn_opts)
     }
 
@@ -82,11 +96,13 @@ impl Config for EndpointConf {
         let listen = matches.value_of("local").unwrap().to_string();
         let remote = matches.value_of("remote").unwrap().to_string();
         let through = matches.value_of("through").map(String::from);
+        let interface = matches.value_of("interface").map(String::from);
 
         EndpointConf {
             listen,
             remote,
             through,
+            interface,
             network: Default::default(),
         }
     }

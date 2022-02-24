@@ -10,14 +10,24 @@ pub enum RemoteAddr {
     DomainName(String, u16),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
+pub struct HaproxyOpts {
+    pub send_proxy: bool,
+    pub accept_proxy: bool,
+    pub send_proxy_version: usize,
+    pub accept_proxy_timeout: usize,
+}
+
+#[derive(Clone, Default)]
 pub struct ConnectOpts {
     pub use_udp: bool,
     pub fast_open: bool,
     pub zero_copy: bool,
-    pub tcp_timeout: u64,
-    pub udp_timeout: u64,
+    pub tcp_timeout: usize,
+    pub udp_timeout: usize,
+    pub haproxy_opts: HaproxyOpts,
     pub send_through: Option<SocketAddr>,
+    pub bind_interface: Option<String>,
 }
 
 #[derive(Clone)]
@@ -63,6 +73,12 @@ impl RemoteAddr {
     }
 }
 
+impl From<SocketAddr> for RemoteAddr {
+    fn from(addr: SocketAddr) -> Self {
+        RemoteAddr::SocketAddr(addr)
+    }
+}
+
 impl Endpoint {
     pub fn new(
         listen: SocketAddr,
@@ -77,6 +93,8 @@ impl Endpoint {
     }
 }
 
+// display impl below
+
 impl Display for RemoteAddr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use RemoteAddr::*;
@@ -89,25 +107,35 @@ impl Display for RemoteAddr {
 
 impl Display for ConnectOpts {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        macro_rules! on_off {
-            ($x: expr) => {
-                if $x {
-                    "on"
-                } else {
-                    "off"
-                }
-            };
+        const fn on_off(b: bool) -> &'static str {
+            if b {
+                "on"
+            } else {
+                "off"
+            }
         }
+
+        if let Some(bind_interface) = &self.bind_interface {
+            write!(f, "bind-iface={}, ", bind_interface)?;
+        }
+
         if let Some(send_through) = &self.send_through {
-            write!(f, "send-through={}, ", send_through)?;
+            write!(f, "send-through={}; ", send_through)?;
         }
         write!(
             f,
-            "udp-forward={}, tcp-fast-open={}, tcp-zero-copy={}, ",
-            on_off!(self.use_udp),
-            on_off!(self.fast_open),
-            on_off!(self.zero_copy)
+            "udp-forward={}, tcp-fast-open={}, tcp-zero-copy={}; ",
+            on_off(self.use_udp),
+            on_off(self.fast_open),
+            on_off(self.zero_copy)
         )?;
+
+        write!(
+            f,
+            "send-proxy={0}, send-proxy-version={2}, accept-proxy={1}, accept-proxy-timeout={3}s; ",
+            on_off(self.haproxy_opts.send_proxy), on_off(self.haproxy_opts.accept_proxy), self.haproxy_opts.send_proxy_version, self.haproxy_opts.accept_proxy_timeout
+        )?;
+
         write!(
             f,
             "tcp-timeout={}s, udp-timeout={}s",
@@ -120,7 +148,7 @@ impl Display for Endpoint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} -> {}, options: {}",
+            "{} -> {}; options: {}",
             &self.listen, &self.remote, &self.opts
         )
     }

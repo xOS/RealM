@@ -58,18 +58,14 @@ impl From<String> for DnsMode {
 }
 
 #[cfg(feature = "trust-dns")]
-impl From<DnsMode> for ResolverOpts {
+impl From<DnsMode> for LookupIpStrategy {
     fn from(mode: DnsMode) -> Self {
-        let ip_strategy = match mode {
+        match mode {
             DnsMode::Ipv4Only => LookupIpStrategy::Ipv4Only,
             DnsMode::Ipv6Only => LookupIpStrategy::Ipv6Only,
             DnsMode::Ipv4AndIpv6 => LookupIpStrategy::Ipv4AndIpv6,
             DnsMode::Ipv4ThenIpv6 => LookupIpStrategy::Ipv4thenIpv6,
             DnsMode::Ipv6ThenIpv4 => LookupIpStrategy::Ipv6thenIpv4,
-        };
-        ResolverOpts {
-            ip_strategy,
-            ..Default::default()
         }
     }
 }
@@ -127,33 +123,69 @@ impl From<DnsProtocol> for Vec<Protocol> {
 // dns config
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct DnsConf {
+    // ResolverOpts
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<DnsMode>,
 
+    // MAX_TTL: u32 = 86400_u32
+    // https://docs.rs/trust-dns-resolver/latest/src/trust_dns_resolver/dns_lru.rs.html#26
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_ttl: Option<u32>,
+
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_ttl: Option<u32>,
+
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_size: Option<usize>,
+
+    // ResolverConfig
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<DnsProtocol>,
 
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub nameservers: Option<Vec<String>>,
 }
 
 impl Display for DnsConf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        macro_rules! default {
+            ($ref: expr) => {
+                match $ref {
+                    Some(x) => *x,
+                    None => Default::default(),
+                }
+            };
+            ($ref: expr, $value: expr) => {
+                match $ref {
+                    Some(x) => *x,
+                    None => $value,
+                }
+            };
+        }
         let DnsConf {
             mode,
+            min_ttl,
+            max_ttl,
+            cache_size,
             protocol,
             nameservers,
         } = self;
 
-        let mode = match mode {
-            Some(m) => *m,
-            None => Default::default(),
-        };
+        let mode = default!(mode);
 
-        let protocol = match protocol {
-            Some(x) => *x,
-            None => Default::default(),
-        };
+        let min_ttl = default!(min_ttl, 0_u32);
+
+        let max_ttl = default!(max_ttl, 86400_u32);
+
+        let cache_size = default!(cache_size, 32_usize);
+
+        let protocol = default!(protocol);
 
         let nameservers = match nameservers {
             Some(s) => s.join(", "),
@@ -161,22 +193,73 @@ impl Display for DnsConf {
         };
 
         write!(f, "mode={}, protocol={}, ", &mode, &protocol).unwrap();
+        write!(
+            f,
+            "min-ttl={}, max-ttl={}, cache-size={}, ",
+            min_ttl, max_ttl, cache_size
+        )
+        .unwrap();
         write!(f, "servers={}", &nameservers)
     }
 }
 
 impl Config for DnsConf {
+    #[cfg(feature = "trust-dns")]
     type Output = (Option<ResolverConfig>, Option<ResolverOpts>);
 
+    #[cfg(not(feature = "trust-dns"))]
+    type Output = ();
+
+    #[cfg(not(feature = "trust-dns"))]
     fn build(self) -> Self::Output {
+        unreachable!()
+    }
+
+    #[cfg(feature = "trust-dns")]
+    fn build(self) -> Self::Output {
+        use crate::empty;
+        use std::time::Duration;
+
         let DnsConf {
             mode,
             protocol,
             nameservers,
+            min_ttl,
+            max_ttl,
+            cache_size,
         } = self;
 
-        let opts: Option<ResolverOpts> = mode.map(|x| x.into());
+        // parse into ResolverOpts
+        // default value:
+        // https://docs.rs/trust-dns-resolver/latest/src/trust_dns_resolver/config.rs.html#681-737
 
+        let opts = if empty![mode, min_ttl, max_ttl, cache_size] {
+            None
+        } else {
+            let ip_strategy: LookupIpStrategy =
+                mode.map(|x| x.into()).unwrap_or_default();
+
+            let positive_min_ttl =
+                min_ttl.map(|x| Duration::from_secs(x as u64));
+
+            let positive_max_ttl =
+                max_ttl.map(|x| Duration::from_secs(x as u64));
+
+            let cache_size = cache_size.unwrap_or({
+                let ResolverOpts { cache_size, .. } = Default::default();
+                cache_size
+            });
+
+            Some(ResolverOpts {
+                ip_strategy,
+                positive_min_ttl,
+                positive_max_ttl,
+                cache_size,
+                ..Default::default()
+            })
+        };
+
+        // parse into ResolverConfig
         let protocol = protocol.unwrap_or_default();
         if nameservers.is_none() && (protocol == DnsProtocol::default()) {
             return (None, opts);
@@ -217,6 +300,9 @@ impl Config for DnsConf {
         use crate::rst;
         let other = other.clone();
         rst!(self, mode, other);
+        rst!(self, min_ttl, other);
+        rst!(self, max_ttl, other);
+        rst!(self, cache_size, other);
         rst!(self, protocol, other);
         rst!(self, nameservers, other);
         self
@@ -226,6 +312,9 @@ impl Config for DnsConf {
         use crate::take;
         let other = other.clone();
         take!(self, mode, other);
+        take!(self, min_ttl, other);
+        take!(self, max_ttl, other);
+        take!(self, cache_size, other);
         take!(self, protocol, other);
         take!(self, nameservers, other);
         self
@@ -233,6 +322,18 @@ impl Config for DnsConf {
 
     fn from_cmd_args(matches: &clap::ArgMatches) -> Self {
         let mode = matches.value_of("dns_mode").map(|x| String::from(x).into());
+
+        let min_ttl = matches
+            .value_of("dns_min_ttl")
+            .map(|x| x.parse::<u32>().unwrap());
+
+        let max_ttl = matches
+            .value_of("dns_max_ttl")
+            .map(|x| x.parse::<u32>().unwrap());
+
+        let cache_size = matches
+            .value_of("dns_cache_size")
+            .map(|x| x.parse::<usize>().unwrap());
 
         let protocol = matches
             .value_of("dns_protocol")
@@ -244,8 +345,15 @@ impl Config for DnsConf {
 
         Self {
             mode,
+            min_ttl,
+            max_ttl,
+            cache_size,
             protocol,
             nameservers,
         }
+    }
+
+    fn is_empty(&self) -> bool {
+        crate::empty![self => mode, min_ttl, max_ttl, cache_size]
     }
 }
