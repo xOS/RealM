@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.2.3"
+sh_ver="1.2.4"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -121,6 +121,7 @@ Install_RealM(){
   new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
   mkdir /etc/realm
   wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv realm /usr/local/bin/realm 
+  rm -rf realm-${arch}-unknown-linux-gnu.tar.gz
   echo "${new_ver}" > ${now_ver_file}
 
 echo '
@@ -173,6 +174,7 @@ Update_RealM(){
 			check_status
 			[[ "$status" == "running" ]] && systemctl stop realm
 			wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm /usr/local/bin/realm && systemctl restart realm
+            rm -rf realm-${arch}-unknown-linux-gnu.tar.gz
             echo "${new_ver}" > ${now_ver_file}
             echo -e "-------${Green_font_prefix} RealM 更新成功! ${Font_color_suffix}-------"
             sleep 3s
