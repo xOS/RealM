@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.2.4"
+sh_ver="1.2.5"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -569,7 +569,7 @@ echo -e "
  ${Green_font_prefix}5.${Font_color_suffix} ZOC 配置
  =============================="
 echo
- read -p " 请输入数字后[1-4] 按回车键:" num3
+ read -p " 请输入数字后[1-5] 按回车键:" num3
  case "$num3" in
 	1)
      Set_dns
