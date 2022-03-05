@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.1.2"
+sh_ver="1.2.2"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -12,6 +12,8 @@ Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
 realm_conf_path="/etc/realm/config.json"
 raw_conf_path="/etc/realm/rawconf"
 now_ver_file="/etc/realm/ver.txt"
+Local="/etc/sysctl.d/local.conf"
+
 check_root(){
 	[[ $EUID != 0 ]] && echo -e "${Error} 当前非ROOT账号(或没有ROOT权限)，无法继续操作，请更换ROOT账号或使用 ${Green_background_prefix}sudo su${Font_color_suffix} 命令获取临时ROOT权限（执行后可能会提示输入当前账号的密码）。" && exit 1
 }
@@ -60,6 +62,38 @@ sysArch() {
         arch="x86_64"
     fi    
 }
+
+#开启系统 TCP Fast Open
+enable_systfo() {
+	kernel=$(uname -r | awk -F . '{print $1}')
+	if [ "$kernel" -ge 3 ]; then
+		echo 3 >/proc/sys/net/ipv4/tcp_fastopen
+		echo "net.ipv4.tcp_fastopen=3" >>/etc/sysctl.conf && sysctl -p >/dev/null 2>&1
+		[[ ! -e ${Local} ]] && echo "fs.file-max = 51200
+net.core.rmem_max = 67108864
+net.core.wmem_max = 67108864
+net.core.rmem_default = 65536
+net.core.wmem_default = 65536
+net.core.netdev_max_backlog = 4096
+net.core.somaxconn = 4096
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_tw_recycle = 0
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_keepalive_time = 1200
+net.ipv4.ip_local_port_range = 10000 65000
+net.ipv4.tcp_max_syn_backlog = 4096
+net.ipv4.tcp_max_tw_buckets = 5000
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_rmem = 4096 87380 67108864
+net.ipv4.tcp_wmem = 4096 65536 67108864
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_congestion_control = bbr" >>/etc/sysctl.d/local.conf && sysctl --system >/dev/null 2>&1
+	else
+		echo -e "${Error}系统内核版本过低，无法支持 TCP Fast Open ！"
+	fi
+}
+
 #检测是否已安装RealM
 check_status(){
     if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
@@ -101,6 +135,7 @@ Type=simple
 User=root
 Restart=on-failure
 RestartSec=5s
+ExecStartPre=/bin/sh -c 'ulimit -n 51200'
 ExecStart=/usr/local/bin/realm -c /etc/realm/config.json
 
 [Install]
@@ -152,7 +187,7 @@ Update_RealM(){
 	fi
 }
 
-#卸载RealM
+#卸载 RealM
 Uninstall_RealM(){
     if test -o /usr/local/bin/realm -o /etc/systemd/system/realm.service -o $realm_conf_path;then
     sleep 2s
@@ -172,7 +207,7 @@ Uninstall_RealM(){
     start_menu
     fi
 }
-#启动RealM
+#启动 RealM
 Start_RealM(){
     if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
     `systemctl start realm`
@@ -188,7 +223,7 @@ Start_RealM(){
     fi
 }
 
-#停止RealM
+#停止 RealM
 Stop_RealM(){
     if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
     `systemctl stop realm`
@@ -204,7 +239,7 @@ Stop_RealM(){
     fi
 }
 
-#重启RealM
+#重启 RealM
 Restart_RealM(){
     if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
     `systemctl restart realm`
@@ -313,6 +348,7 @@ ${Green_font_prefix} 1.${Font_color_suffix} 开启  ${Green_font_prefix} 2.${Fon
 	[[ -z "${tfo}" ]] && tfo="1"
 	if [[ ${tfo} == "1" ]]; then
         jq '.network.fast_open = true' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
+        enable_systfo
 	else
         jq '.network.fast_open = false' $realm_conf_path > "$tmp" && mv "$tmp" $realm_conf_path
 	fi
