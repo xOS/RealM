@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.2.6"
+sh_ver="1.3.6"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -456,7 +456,7 @@ read -p "输入任意键按回车返回主菜单"
 #查看规则
 Check_RealM(){
     echo -e "=============================="
-    echo -e "           RealM 配置             "
+    echo -e "           RealM 转发规则             "
     echo -e "=============================="
     echo -e "序号|本地端口|远程地址:远程端口"
     echo -e "=============================="
@@ -474,7 +474,7 @@ start_menu
 
 #删除RealM转发规则
 Delete_RealM(){
-    echo -e "          RealM 配置              "
+    echo -e "          RealM 转发规则              "
     echo -e "=============================="
     echo -e "序号|本地端口|转发地址:转发端口"
     echo -e "=============================="
@@ -487,17 +487,17 @@ Delete_RealM(){
         echo -e " $i  |  $listening_ports  |$remote_addresses:$remote_ports"
         echo -e "------------------------------"
     done
-read -p "请输入你要删除的配置编号：" numdelete
+read -p "请输入你要删除的规则编号：" numdelete
 sed -i "${numdelete}d" $raw_conf_path
 nu=${numdelete}-1
 temp=`jq 'del(.endpoints['$nu'])' $realm_conf_path`
 echo $temp > $realm_conf_path
 clear
 `systemctl restart realm`
-echo -e "${Red_font_prefix}相应配置已删除,服务已重启${Font_color_suffix}"
+echo -e "${Red_font_prefix}相应规则已删除,服务已重启${Font_color_suffix}"
 sleep 2s
 clear
-echo -e "${Green_font_prefix}当前配置如下${Font_color_suffix}"
+echo -e "${Green_font_prefix}当前规则如下${Font_color_suffix}"
 echo -e "------------------------------"
 Check_RealM
 read -p "输入任意键按回车返回主菜单"
@@ -560,6 +560,33 @@ Recovey(){
 	sleep 2s
 	start_menu
 	fi
+}
+
+# 读取配置
+Read_config(){
+	[[ ! -e ${realm_conf_path} ]] && echo -e "${Error} RealM 配置文件不存在 !" && exit 1
+	mode=$(cat ${realm_conf_path}|jq -r '.dns.mode')
+	protocol=$(cat ${realm_conf_path}|jq -r '.dns.protocol')
+    udp=$(cat ${realm_conf_path}|jq -r '.network.use_udp')
+	tfo=$(cat ${realm_conf_path}|jq -r '.network.fast_open')
+	zoc=$(cat ${realm_conf_path}|jq -r '.network.zero_copy')
+}
+
+# 查看转发配置
+View_Conf(){
+    check_status
+	Read_config
+	clear && echo
+	echo -e "RealM 转发 配置："
+	echo -e "=============================="
+	echo -e " DNS 模式：${Green_font_prefix}${mode}${Font_color_suffix}"
+	echo -e " DNS 协议：${Green_font_prefix}${protocol}${Font_color_suffix}"
+	echo -e " UDP 配置：${Green_font_prefix}${udp}${Font_color_suffix}"
+	echo -e " ZOC 配置：${Green_font_prefix}${zoc}${Font_color_suffix}"
+	echo -e " TFO 配置：${Green_font_prefix}${tfo}${Font_color_suffix}"
+	echo -e "=============================="
+	echo
+	before_start_menu
 }
 
 #修改转发配置
@@ -708,6 +735,11 @@ Time_Task(){
   fi  
 }
 
+before_start_menu() {
+    echo && echo -n -e "${yellow}* 按回车返回主菜单 *${plain}" && read temp
+    start_menu
+}
+
 #主菜单
 start_menu(){
 check_root
@@ -736,12 +768,13 @@ echo -e "
  ==============================
  ${Green_font_prefix}11.${Font_color_suffix} 退出脚本
  ==============================
- ${Green_font_prefix}12.${Font_color_suffix} 修改配置
- ${Green_font_prefix}13.${Font_color_suffix} 备份/恢复配置
- ${Green_font_prefix}14.${Font_color_suffix} 添加定时重启任务"
+ ${Green_font_prefix}12.${Font_color_suffix} 查看配置
+ ${Green_font_prefix}13.${Font_color_suffix} 修改配置
+ ${Green_font_prefix}14.${Font_color_suffix} 备份/恢复配置
+ ${Green_font_prefix}15.${Font_color_suffix} 添加定时重启任务"
  check_status
 
-read -p " 请输入数字后[0-14] 按回车键:
+read -p " 请输入数字后[0-15] 按回车键:
 " num
 case "$num" in
 	1)
@@ -781,17 +814,20 @@ case "$num" in
 	Update_Shell
 	;;
 	12)
+	View_Conf
+    ;;
+    13)
 	Set_Conf
     ;;
-	13)
+	14)
 	Backup_Recovey
 	;;
-	14)
+	15)
 	Time_Task
 	;;	
 	*)	
 	clear
-	echo -e "${Error}:请输入正确数字 [0-14] 按回车键"
+	echo -e "${Error}:请输入正确数字 [0-15] 按回车键"
 	sleep 2s
 	start_menu
 	;;
