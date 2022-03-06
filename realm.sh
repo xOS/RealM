@@ -674,7 +674,7 @@ Status_RealM(){
 Time_Task(){
   clear
   echo "###############################"
-  echo "#        RealM 一键脚本       #"
+  echo "#        RealM 管理脚本       #"
   echo "###############################" 
   echo -e "=============================="
   echo -e "${Green_font_prefix}1.配置RealM定时重启任务${Font_color_suffix}"
