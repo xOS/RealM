@@ -3,7 +3,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.2.5"
+sh_ver="1.2.6"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -65,11 +65,16 @@ sysArch() {
 
 #开启系统 TCP Fast Open
 enable_systfo() {
+	sysctl="/etc/sysctl.conf"
+	str="net.ipv4.tcp_fastopen=3"
+	value=$(grep -c "$str" $sysctl)
 	kernel=$(uname -r | awk -F . '{print $1}')
 	if [ "$kernel" -ge 3 ]; then
 		echo 3 >/proc/sys/net/ipv4/tcp_fastopen
-		echo "net.ipv4.tcp_fastopen=3" >>/etc/sysctl.conf && sysctl -p >/dev/null 2>&1
-		[[ ! -e ${Local} ]] && echo "fs.file-max = 51200
+		if [[ $value -ne 1 ]]; then
+			echo "$str" >> $sysctl && sysctl -p >/dev/null 2>&1
+		fi
+		[[ ! -e $Local ]] && echo "fs.file-max = 51200
 net.core.rmem_max = 67108864
 net.core.wmem_max = 67108864
 net.core.rmem_default = 65536
@@ -90,7 +95,7 @@ net.ipv4.tcp_wmem = 4096 65536 67108864
 net.ipv4.tcp_mtu_probing = 1
 net.ipv4.tcp_congestion_control = bbr" >>/etc/sysctl.d/local.conf && sysctl --system >/dev/null 2>&1
 	else
-		echo -e "${Error}系统内核版本过低，无法支持 TCP Fast Open ！"
+		echo -e "$Error系统内核版本过低，无法支持 TCP Fast Open ！"
 	fi
 }
 
