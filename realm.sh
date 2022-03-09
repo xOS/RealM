@@ -3,7 +3,14 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 clear
 
-sh_ver="1.3.8"
+#=================================================
+#	System Required: CentOS/Debian/Ubuntu
+#	Description: RealM 管理脚本
+#	Author: 翠花
+#	WebSite: https://www.nange.cn
+#=================================================
+
+sh_ver="1.3.9"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -65,15 +72,9 @@ sysArch() {
 
 #开启系统 TCP Fast Open
 enable_systfo() {
-	sysctl="/etc/sysctl.conf"
-	str="net.ipv4.tcp_fastopen=3"
-	value=$(grep -c "$str" $sysctl)
 	kernel=$(uname -r | awk -F . '{print $1}')
 	if [ "$kernel" -ge 3 ]; then
 		echo 3 >/proc/sys/net/ipv4/tcp_fastopen
-		if [[ $value -ne 1 ]]; then
-			echo "$str" >> $sysctl && sysctl -p >/dev/null 2>&1
-		fi
 		[[ ! -e $Local ]] && echo "fs.file-max = 51200
 net.core.rmem_max = 67108864
 net.core.wmem_max = 67108864
