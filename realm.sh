@@ -10,13 +10,14 @@ clear
 #	WebSite: https://www.nange.cn
 #=================================================
 
-sh_ver="1.3.9"
+sh_ver="1.4.0"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
 realm_conf_path="/etc/realm/config.json"
+realm_bin_path="/usr/local/bin/realm"
 raw_conf_path="/etc/realm/rawconf"
 now_ver_file="/etc/realm/ver.txt"
 Local="/etc/sysctl.d/local.conf"
@@ -103,7 +104,7 @@ net.ipv4.tcp_congestion_control = bbr" >>/etc/sysctl.d/local.conf && sysctl --sy
 
 #检测是否已安装RealM
 check_status(){
-    if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
+    if test -a $realm_bin_path -a /etc/systemd/system/realm.service -a $realm_conf_path;then
         echo "------------------------------"
         echo -e "--------${Green_font_prefix} RealM已安装~ ${Font_color_suffix}--------"
         echo "------------------------------"
@@ -116,7 +117,7 @@ check_status(){
 
 # 安装RealM
 Install_RealM(){
-  if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
+  if test -a $realm_bin_path -a /etc/systemd/system/realm.service -a $realm_conf_path;then
   echo "≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡"
   echo -e "≡≡≡≡≡≡ ${Green_font_prefix}RealM已安装~ ${Font_color_suffix}≡≡≡≡≡≡"
   echo "≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡"
@@ -127,7 +128,8 @@ Install_RealM(){
   echo -e "${Info} 开始安装 RealM 主程序..."
   new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases| jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
   mkdir /etc/realm
-  wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv realm /usr/local/bin/realm 
+  wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv 
+  -f realm $realm_bin_path 
   rm -rf realm-${arch}-unknown-linux-gnu.tar.gz
   echo "${new_ver}" > ${now_ver_file}
 
@@ -151,7 +153,7 @@ WantedBy=multi-user.target' > /etc/systemd/system/realm.service
 systemctl enable --now realm
 Write_config
     echo "------------------------------"
-    if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
+    if test -a $realm_bin_path -a /etc/systemd/system/realm.service -a $realm_conf_path;then
         echo -e "-------${Green_font_prefix} RealM 主程序安装成功! ${Font_color_suffix}-------"
         echo "------------------------------"
     else
@@ -179,8 +181,8 @@ Update_RealM(){
 		[[ -z "${yn}" ]] && yn="y"
 		if [[ $yn == [Yy] ]]; then
 			check_status
-			[[ "$status" == "running" ]] && systemctl stop realm
-			wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm /usr/local/bin/realm && systemctl restart realm
+			# [[ "$status" == "running" ]] && systemctl stop realm
+			wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm $realm_bin_path && systemctl restart realm
             rm -rf realm-${arch}-unknown-linux-gnu.tar.gz
             echo "${new_ver}" > ${now_ver_file}
             echo -e "-------${Green_font_prefix} RealM 更新成功! ${Font_color_suffix}-------"
@@ -198,7 +200,7 @@ Update_RealM(){
 
 #卸载 RealM
 Uninstall_RealM(){
-    if test -o /usr/local/bin/realm -o /etc/systemd/system/realm.service -o $realm_conf_path;then
+    if test -o $realm_bin_path -o /etc/systemd/system/realm.service -o $realm_conf_path;then
     sleep 2s
     systemctl stop realm.service
     systemctl disable realm.service
@@ -218,7 +220,7 @@ Uninstall_RealM(){
 }
 #启动 RealM
 Start_RealM(){
-    if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
+    if test -a $realm_bin_path -a /etc/systemd/system/realm.service -a $realm_conf_path;then
     `systemctl start realm`
     echo "------------------------------"
     echo -e "-------${Green_font_prefix} RealM启动成功! ${Font_color_suffix}-------"
@@ -234,7 +236,7 @@ Start_RealM(){
 
 #停止 RealM
 Stop_RealM(){
-    if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
+    if test -a $realm_bin_path -a /etc/systemd/system/realm.service -a $realm_conf_path;then
     `systemctl stop realm`
     echo "------------------------------"
     echo -e "-------${Green_font_prefix} RealM停止成功! ${Font_color_suffix}-------"
@@ -250,7 +252,7 @@ Stop_RealM(){
 
 #重启 RealM
 Restart_RealM(){
-    if test -a /usr/local/bin/realm -a /etc/systemd/system/realm.service -a $realm_conf_path;then
+    if test -a $realm_bin_path -a /etc/systemd/system/realm.service -a $realm_conf_path;then
     `systemctl restart realm`
     echo "------------------------------"
     echo -e "-------${Green_font_prefix} RealM 重启成功! ${Font_color_suffix}-------"
