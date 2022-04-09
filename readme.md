@@ -87,6 +87,7 @@ FLAGS:
 
 OPTIONS:
     -n, --nofile <limit>        set nofile limit
+    -p, --page <number>         set pipe capacity
     -c, --config <path>         use config file
     -l, --listen <address>      listen address
     -r, --remote <address>      remote address
@@ -117,6 +118,7 @@ TIMEOUT OPTIONS:
 
 SUBCOMMANDS:
     convert    convert your legacy configuration into an advanced one
+
 ```
 
 Start from command line arguments:

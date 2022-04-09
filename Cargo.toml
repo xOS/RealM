@@ -1,6 +1,6 @@
 [package]
 name = "realm"
-version = "2.0.1"
+version = "2.0.2"
 authors = ["zhboner <zhboner@gmail.com>"]
 edition = "2021"
 
@@ -60,7 +60,7 @@ panic = "abort"
 opt-level = 0
 
 [features]
-default = ["udp", "zero-copy", "trust-dns", "multi-thread", "proxy-protocol"]
+default = ["udp", "tfo", "zero-copy", "trust-dns", "multi-thread", "proxy-protocol"]
 udp = []
 tfo = ["tokio-tfo"]
 zero-copy = []
