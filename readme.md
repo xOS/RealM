@@ -38,6 +38,7 @@ cargo build --release
 - udp *(enabled by default)*
 - trust-dns *(enabled by default)*
 - zero-copy *(enabled on linux)*
+- transport *(enabled by default)*
 - multi-thread *(enabled by default)*
 - tfo
 - mi-malloc
@@ -71,7 +72,7 @@ wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/xOS/RealM@master/real
 ## Usage
 
 ```shell
-Realm 2.0.0 [udp][zero-copy][trust-dns][proxy-protocol][multi-thread]
+Realm 2.0.3 [udp][zero-copy][trust-dns][proxy-protocol][multi-thread]
 A high efficiency relay tool
 
 USAGE:
