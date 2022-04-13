@@ -55,30 +55,3 @@ jobs:
         with:
           name: realm-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.output }}
-  build-apple:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
-    steps:
-      - uses: actions/checkout@v2
-      - name: install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: ${{ matrix.target }}
-          override: true
-      - name: compile
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target=${{ matrix.target }}
-      - name: upload
-        uses: actions/upload-artifact@v2
-        with:
-          name: realm-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/realm
-

@@ -52,36 +52,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: release-${{ matrix.target }}/*
-  release-apple:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
-    steps:
-      - uses: actions/checkout@v2
-      - name: install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: ${{ matrix.target }}
-          override: true
-      - name: compile
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target=${{ matrix.target }}
-      - name: pack
-        run: |
-          mkdir -p release-${{ matrix.target }}
-          cd release-${{ matrix.target }}
-          tar -C ../target/${{ matrix.target }}/release/ -zcf realm-${{ matrix.target }}.tar.gz realm
-          shasum -a 256 realm-${{ matrix.target }}.tar.gz > realm-${{ matrix.target }}.sha256
-      - name: release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: release-${{ matrix.target }}/*
