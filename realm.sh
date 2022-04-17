@@ -752,7 +752,9 @@ start_menu() {
 	echo "###############################"
 	echo -e "
  当前版本 ${Red_font_prefix}[v${sh_ver}]${Font_color_suffix}
+ ==============================
  ${Green_font_prefix}0.${Font_color_suffix} 更新脚本
+ ==============================
  ${Green_font_prefix}1.${Font_color_suffix} 安装 RealM
  ${Green_font_prefix}2.${Font_color_suffix} 更新 RealM
  ${Green_font_prefix}3.${Font_color_suffix} 卸载 RealM
@@ -771,9 +773,10 @@ start_menu() {
  ${Green_font_prefix}12.${Font_color_suffix} 查看配置
  ${Green_font_prefix}13.${Font_color_suffix} 修改配置
  ${Green_font_prefix}14.${Font_color_suffix} 备份/恢复配置
- ${Green_font_prefix}15.${Font_color_suffix} 添加定时重启任务"
+ ${Green_font_prefix}15.${Font_color_suffix} 添加定时重启任务
+ =============================="
 	check_installed
-
+	echo -e  " =============================="
 	read -p " 请输入数字后[0-15] 按回车键:
 " num
 	case "$num" in
