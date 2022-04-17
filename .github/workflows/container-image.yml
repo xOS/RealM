@@ -92,5 +92,5 @@ jobs:
           context: .
           file: ./Dockerfile.alpine
           push: true
-          tags: ghcr.io/$github.repository:alpine, ghcr.io/xos/realm:${{ github.event.inputs.tag || env.RELEASE_VERSION }}-alpine
+          tags: ghcr.io/xos/realm:alpine, ghcr.io/xos/realm:${{ github.event.inputs.tag || env.RELEASE_VERSION }}-alpine
           
