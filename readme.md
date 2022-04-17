@@ -13,7 +13,11 @@ Realm is a simple, high performance relay server written in rust.
 
 ## Transports
 
-With `transport` feature, Realm is able to handle [ws/tls/wss] on both sides. This is powered by [libkaminari](https://github.com/zephyrchien/kaminari).
+With `transport` feature, Realm is able to handle [ws/tls/wss] on both sides. This is powered by [libkaminari](https://github.com/zephyrchien/kaminari), which is dramatically faster in comparison to other tools. [Here are some benchmark results](https://github.com/zephyrchien/boring-relay-bench).
+
+## Container
+
+Realm can be run in a container with OCI (like Docker, Podman, Kubernetes, etc), see guides [here](readme.container.md).
 
 ## Build Guides
 
@@ -76,7 +80,7 @@ wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/xOS/RealM@master/real
 ## Usage
 
 ```shell
-Realm 2.1.0 [udp][zero-copy][trust-dns][proxy-protocol][multi-thread]
+Realm 2.x [udp][zero-copy][trust-dns][proxy-protocol][transport][multi-thread]
 A high efficiency relay tool
 
 USAGE:
@@ -215,7 +219,7 @@ remote = "www.google.com:443"
 
 [See other examples here](./examples)
 
-## global
+## Overview
 
 ```shell
 ├── log
@@ -243,6 +247,8 @@ remote = "www.google.com:443"
     ├── remote
     ├── through
     ├── interface
+    ├── listen_transport
+    ├── remote_transport
     └── network
 ```
 
