@@ -84,7 +84,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ github.event.inputs.tag || env.RELEASE_VERSION }}
+          tags: ghcr.io/xos/realm:latest, ghcr.io/xos/realm:${{ github.event.inputs.tag || env.RELEASE_VERSION }}
           
       - name: Build and push images with alpine
         uses: docker/build-push-action@v2
@@ -92,5 +92,5 @@ jobs:
           context: .
           file: ./Dockerfile.alpine
           push: true
-          tags: ghcr.io/${{ github.repository }}:alpine, ghcr.io/${{ github.repository }}:${{ github.event.inputs.tag || env.RELEASE_VERSION }}-alpine
+          tags: ghcr.io/$github.repository:alpine, ghcr.io/xos/realm:${{ github.event.inputs.tag || env.RELEASE_VERSION }}-alpine
           
