@@ -22,11 +22,11 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             output: realm
-	        - target: x86_64-unknown-linux-musl
+          - target: x86_64-unknown-linux-musl
             output: realm
           - target: aarch64-unknown-linux-gnu
             output: realm
-	        - target: aarch64-unknown-linux-musl
+          - target: aarch64-unknown-linux-musl
             output: realm
           - target: arm-unknown-linux-gnueabi
             output: realm
