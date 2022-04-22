@@ -1,6 +1,6 @@
 [package]
 name = "realm"
-version = "2.1.3"
+version = "2.1.4"
 authors = ["zhboner <zhboner@gmail.com>"]
 edition = "2021"
 
@@ -32,7 +32,7 @@ pin-project = "1"
 lazy_static = "1"
 
 # transport
-kaminari = { version = "0.5.7", optional = true }
+kaminari = { version = "0.6.0", optional = true }
 
 
 # tfo
@@ -59,18 +59,24 @@ daemonize = "0.4"
 [profile.release]
 opt-level = 3
 lto = true
+codegen-units = 1
+incremental = false
 panic = "abort"
+strip = true
 
 [profile.dev]
 opt-level = 0
 
 [features]
-default = ["udp", "tfo", "zero-copy", "trust-dns", "multi-thread", "proxy-protocol", "transport"]
+default = ["udp", "tfo", "zero-copy", "trust-dns", "multi-thread",
+    "proxy-protocol", "transport", "transport-boost"
+]
 udp = []
 tfo = ["tokio-tfo"]
 zero-copy = []
 trust-dns = ["trust-dns-resolver"]
 transport = ["kaminari"]
+transport-boost = []
 proxy-protocol = ["haproxy"]
 multi-thread = ["tokio/rt-multi-thread"]
 jemalloc = ["jemallocator"]
