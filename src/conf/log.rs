@@ -2,7 +2,7 @@ use std::fmt::{Formatter, Display};
 use serde::{Serialize, Deserialize};
 use log::LevelFilter;
 use super::Config;
-use crate::utils::DEFAULT_LOG_FILE;
+use crate::consts::DEFAULT_LOG_FILE;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
@@ -124,9 +124,7 @@ impl Config for LogConf {
     }
 
     fn from_cmd_args(matches: &clap::ArgMatches) -> Self {
-        let level = matches
-            .value_of("log_level")
-            .map(|x| String::from(x).into());
+        let level = matches.value_of("log_level").map(|x| String::from(x).into());
 
         let output = matches.value_of("log_output").map(String::from);
 

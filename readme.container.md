@@ -1,6 +1,6 @@
 # Use realm in container
 
-We push the OCI-based image to [Github Container Registry](https://ghcr.io) with name: `ghcr.io/xos/realm`.
+We push the OCI-based image to [Github Container Registry](https://ghcr.io) with name: `ghcr.io/zhboner/realm`.
 
 These are some tag of this image:
 
@@ -10,7 +10,7 @@ These are some tag of this image:
 ## Docker
 
 ```bash
-docker run -d -p 9000:9000 ghcr.io/xos/realm:latest -l 0.0.0.0:9000 -r 192.168.233.2:9000
+docker run -d -p 9000:9000 ghcr.io/zhboner/realm:latest -l 0.0.0.0:9000 -r 192.168.233.2:9000
 ```
 
 ## Docker Swarm (Docker Compose)
@@ -20,7 +20,7 @@ docker run -d -p 9000:9000 ghcr.io/xos/realm:latest -l 0.0.0.0:9000 -r 192.168.2
 version: '3'
 services:
   port-9000:
-    image: ghcr.io/xos/realm:latest
+    image: ghcr.io/zhboner/realm:latest
     ports:
       - 9000:9000
     command: -l 0.0.0.0:9000 -r 192.168.233.2:9000
@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
       - name: realm
-        image: ghcr.io/xos/realm:latest
+        image: ghcr.io/zhboner/realm:latest
         args:
           - "-l=0.0.0.0:9000"
           - "-r=192.168.233.2:9000"

@@ -18,36 +18,25 @@ where
     type StreamW = SW;
 
     #[inline]
-    fn poll_read_buf(
-        &mut self,
-        cx: &mut Context<'_>,
-        stream: &mut Self::StreamR,
-    ) -> Poll<Result<usize>> {
+    fn poll_read_buf(&mut self, cx: &mut Context<'_>, stream: &mut Self::StreamR) -> Poll<Result<usize>> {
         let mut buf = ReadBuf::new(self.buf.as_mut());
-        Pin::new(stream)
-            .poll_read(cx, &mut buf)
-            .map_ok(|_| buf.filled().len())
+        Pin::new(stream).poll_read(cx, &mut buf).map_ok(|_| buf.filled().len())
     }
 
     #[inline]
-    fn poll_write_buf(
-        &mut self,
-        cx: &mut Context<'_>,
-        stream: &mut Self::StreamW,
-    ) -> Poll<Result<usize>> {
+    fn poll_write_buf(&mut self, cx: &mut Context<'_>, stream: &mut Self::StreamW) -> Poll<Result<usize>> {
         Pin::new(stream).poll_write(cx, &self.buf.as_mut()[self.pos..self.cap])
     }
 
     #[inline]
-    fn poll_flush_buf(
-        &mut self,
-        cx: &mut Context<'_>,
-        stream: &mut Self::StreamW,
-    ) -> Poll<Result<()>> {
+    fn poll_flush_buf(&mut self, cx: &mut Context<'_>, stream: &mut Self::StreamW) -> Poll<Result<()>> {
         Pin::new(stream).poll_flush(cx)
     }
 }
 
+/// Copy data bidirectionally between two streams via `byte array`.
+///
+/// Return transferred bytes no matter this operation succeeds or fails.
 pub async fn bidi_copy<A, B>(a: &mut A, b: &mut B) -> (Result<()>, u64, u64)
 where
     A: AsyncRead + AsyncWrite + Unpin,
@@ -62,11 +51,13 @@ mod buf_ctl {
     pub const DF_BUF_SIZE: usize = 0x2000;
     static mut BUF_SIZE: usize = DF_BUF_SIZE;
 
+    /// Get current buffer size.
     #[inline]
     pub fn buf_size() -> usize {
         unsafe { BUF_SIZE }
     }
 
+    /// Set buffer size.
     #[inline]
     pub fn set_buf_size(n: usize) {
         unsafe { BUF_SIZE = n }

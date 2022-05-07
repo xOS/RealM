@@ -11,10 +11,10 @@ mod dns;
 pub use dns::{DnsMode, DnsProtocol, DnsConf};
 
 mod net;
-pub use net::NetConf;
+pub use net::{NetConf, NetInfo};
 
 mod endpoint;
-pub use endpoint::EndpointConf;
+pub use endpoint::{EndpointConf, EndpointInfo};
 
 mod legacy;
 pub use legacy::LegacyConf;
@@ -34,11 +34,11 @@ pub trait Config {
     fn build(self) -> Self::Output;
 
     // override self if other not empty
-    // usage: cmd argument overrides global and local option
+    // e.g.: cmd argument overrides global and local option
     fn rst_field(&mut self, other: &Self) -> &mut Self;
 
     // take other only if self empty & other not empty
-    // usage: local field takes global option
+    // e.g.: local field takes global option
     fn take_field(&mut self, other: &Self) -> &mut Self;
 
     fn from_cmd_args(matches: &ArgMatches) -> Self;
@@ -70,12 +70,7 @@ pub struct FullConf {
 
 impl FullConf {
     #[allow(unused)]
-    pub fn new(
-        log: LogConf,
-        dns: DnsConf,
-        network: NetConf,
-        endpoints: Vec<EndpointConf>,
-    ) -> Self {
+    pub fn new(log: LogConf, dns: DnsConf, network: NetConf, endpoints: Vec<EndpointConf>) -> Self {
         FullConf {
             log,
             dns,
@@ -85,8 +80,7 @@ impl FullConf {
     }
 
     pub fn from_conf_file(file: &str) -> Self {
-        let conf = fs::read_to_string(file)
-            .unwrap_or_else(|e| panic!("unable to open {}: {}", file, &e));
+        let conf = fs::read_to_string(file).unwrap_or_else(|e| panic!("unable to open {}: {}", file, &e));
         match Self::from_conf_str(&conf) {
             Ok(x) => x,
             Err(e) => panic!("failed to parse {}: {}", file, &e),
@@ -176,7 +170,7 @@ macro_rules! take {
 
 #[macro_export]
 macro_rules! empty {
-    ( $this:expr => $( $field: ident ),* ) => {{
+    ( $this: expr => $( $field: ident ),* ) => {{
         let mut res = true;
         $(
             res = res && $this.$field.is_none();

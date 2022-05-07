@@ -59,10 +59,8 @@ where
     CopyBuffer<B, SR, SL>: AsyncIOBuf,
 {
     // type equality constraints will save this (one day)!
-    let r: &mut <CopyBuffer<B, SR, SL> as AsyncIOBuf>::StreamR =
-        unsafe { std::mem::transmute(r) };
-    let w: &mut <CopyBuffer<B, SR, SL> as AsyncIOBuf>::StreamW =
-        unsafe { std::mem::transmute(w) };
+    let r: &mut <CopyBuffer<B, SR, SL> as AsyncIOBuf>::StreamR = unsafe { std::mem::transmute(r) };
+    let w: &mut <CopyBuffer<B, SR, SL> as AsyncIOBuf>::StreamW = unsafe { std::mem::transmute(w) };
     loop {
         match state {
             TransferState::Running(buf) => {
@@ -85,8 +83,8 @@ where
     B: Unpin,
     SL: AsyncRead + AsyncWrite + Unpin,
     SR: AsyncRead + AsyncWrite + Unpin,
-    CopyBuffer<B, SL, SR>: AsyncIOBuf + Unpin,
-    CopyBuffer<B, SR, SL>: AsyncIOBuf + Unpin,
+    CopyBuffer<B, SL, SR>: AsyncIOBuf,
+    CopyBuffer<B, SR, SL>: AsyncIOBuf,
 {
     a: &'a mut <CopyBuffer<B, SL, SR> as AsyncIOBuf>::StreamR,
     b: &'a mut <CopyBuffer<B, SL, SR> as AsyncIOBuf>::StreamW,
@@ -120,15 +118,29 @@ where
         let a_to_b = transfer(cx, a_to_b, a, b, ab_amt)?;
         let b_to_a = transfer2::<B, SL, SR>(cx, b_to_a, b, a, ba_amt)?;
 
-        // It is not a problem if ready! returns early because transfer_one_direction for the
-        // other direction will keep returning TransferState::Done(count) in future calls to poll
-        ready!(a_to_b);
-        ready!(b_to_a);
+        // graceful shutdown
+        #[cfg(not(feature = "brutal-shutdown"))]
+        {
+            ready!(a_to_b);
+            ready!(b_to_a);
+            Poll::Ready(Ok(()))
+        }
 
-        Poll::Ready(Ok(()))
+        // brutal shutdown
+        #[cfg(feature = "brutal-shutdown")]
+        {
+            if a_to_b.is_ready() || b_to_a.is_ready() {
+                Poll::Ready(Ok(()))
+            } else {
+                Poll::Pending
+            }
+        }
     }
 }
 
+/// Copy data bidirectionally between two streams via two provided buffers.
+///
+/// Return transferred bytes no matter this operation succeeds or fails.
 pub async fn bidi_copy_buf<B, SR, SW>(
     a: &mut <CopyBuffer<B, SR, SW> as AsyncIOBuf>::StreamR,
     b: &mut <CopyBuffer<B, SR, SW> as AsyncIOBuf>::StreamW,
@@ -139,8 +151,8 @@ where
     B: Unpin,
     SR: AsyncRead + AsyncWrite + Unpin,
     SW: AsyncRead + AsyncWrite + Unpin,
-    CopyBuffer<B, SR, SW>: AsyncIOBuf + Unpin,
-    CopyBuffer<B, SW, SR>: AsyncIOBuf + Unpin,
+    CopyBuffer<B, SR, SW>: AsyncIOBuf,
+    CopyBuffer<B, SW, SR>: AsyncIOBuf,
 {
     let a_to_b = TransferState::Running(a_to_b_buf);
     let b_to_a = TransferState::Running(b_to_a_buf);

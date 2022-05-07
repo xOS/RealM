@@ -1,16 +1,12 @@
-use cfg_if::cfg_if;
 use std::fmt::{Formatter, Display};
-use serde::{Serialize, Deserialize};
-use super::Config;
+use std::net::ToSocketAddrs;
 
-cfg_if! {
-    if #[cfg(feature = "trust-dns")] {
-        use std::net::ToSocketAddrs;
-        use trust_dns_resolver as resolver;
-        use resolver::config::{LookupIpStrategy, NameServerConfig, Protocol};
-        use resolver::config::{ResolverConfig, ResolverOpts};
-    }
-}
+use serde::{Serialize, Deserialize};
+use realm_core::dns::config;
+use config::{LookupIpStrategy, NameServerConfig, Protocol};
+use config::{ResolverConfig, ResolverOpts};
+
+use super::Config;
 
 // dns mode
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
@@ -57,7 +53,6 @@ impl From<String> for DnsMode {
     }
 }
 
-#[cfg(feature = "trust-dns")]
 impl From<DnsMode> for LookupIpStrategy {
     fn from(mode: DnsMode) -> Self {
         match mode {
@@ -108,7 +103,6 @@ impl From<String> for DnsProtocol {
     }
 }
 
-#[cfg(feature = "trust-dns")]
 impl From<DnsProtocol> for Vec<Protocol> {
     fn from(x: DnsProtocol) -> Self {
         use DnsProtocol::*;
@@ -204,18 +198,8 @@ impl Display for DnsConf {
 }
 
 impl Config for DnsConf {
-    #[cfg(feature = "trust-dns")]
     type Output = (Option<ResolverConfig>, Option<ResolverOpts>);
 
-    #[cfg(not(feature = "trust-dns"))]
-    type Output = ();
-
-    #[cfg(not(feature = "trust-dns"))]
-    fn build(self) -> Self::Output {
-        unreachable!()
-    }
-
-    #[cfg(feature = "trust-dns")]
     fn build(self) -> Self::Output {
         use crate::empty;
         use std::time::Duration;
@@ -236,27 +220,30 @@ impl Config for DnsConf {
         let opts = if empty![mode, min_ttl, max_ttl, cache_size] {
             None
         } else {
-            let ip_strategy: LookupIpStrategy =
-                mode.map(|x| x.into()).unwrap_or_default();
+            let ip_strategy: LookupIpStrategy = mode.map(|x| x.into()).unwrap_or_default();
 
-            let positive_min_ttl =
-                min_ttl.map(|x| Duration::from_secs(x as u64));
+            let positive_min_ttl = min_ttl.map(|x| Duration::from_secs(x as u64));
 
-            let positive_max_ttl =
-                max_ttl.map(|x| Duration::from_secs(x as u64));
+            let positive_max_ttl = max_ttl.map(|x| Duration::from_secs(x as u64));
 
             let cache_size = cache_size.unwrap_or({
                 let ResolverOpts { cache_size, .. } = Default::default();
                 cache_size
             });
 
-            Some(ResolverOpts {
-                ip_strategy,
-                positive_min_ttl,
-                positive_max_ttl,
-                cache_size,
-                ..Default::default()
-            })
+            let mut opts = ResolverOpts::default();
+
+            macro_rules! replace {
+                ($($x: ident, )+) => {
+                    $(
+                        opts.$x = $x;
+                    )+
+                }
+            }
+
+            replace!(ip_strategy, positive_min_ttl, positive_max_ttl, cache_size,);
+
+            Some(opts)
         };
 
         // parse into ResolverConfig
@@ -273,10 +260,9 @@ impl Config for DnsConf {
                 .map(|x| x.to_socket_addrs().unwrap().next().unwrap())
                 .collect(),
             None => {
-                use crate::dns::DnsConf as TrustDnsConf;
+                use realm_core::dns::DnsConf as TrustDnsConf;
                 let TrustDnsConf { conf, .. } = TrustDnsConf::default();
-                let mut addrs: Vec<std::net::SocketAddr> =
-                    conf.name_servers().iter().map(|x| x.socket_addr).collect();
+                let mut addrs: Vec<std::net::SocketAddr> = conf.name_servers().iter().map(|x| x.socket_addr).collect();
                 addrs.dedup();
                 addrs
             }
@@ -289,6 +275,7 @@ impl Config for DnsConf {
                     protocol,
                     tls_dns_name: None,
                     trust_nx_responses: true,
+                    bind_addr: None,
                 });
             }
         }
@@ -323,21 +310,13 @@ impl Config for DnsConf {
     fn from_cmd_args(matches: &clap::ArgMatches) -> Self {
         let mode = matches.value_of("dns_mode").map(|x| String::from(x).into());
 
-        let min_ttl = matches
-            .value_of("dns_min_ttl")
-            .map(|x| x.parse::<u32>().unwrap());
+        let min_ttl = matches.value_of("dns_min_ttl").map(|x| x.parse::<u32>().unwrap());
 
-        let max_ttl = matches
-            .value_of("dns_max_ttl")
-            .map(|x| x.parse::<u32>().unwrap());
+        let max_ttl = matches.value_of("dns_max_ttl").map(|x| x.parse::<u32>().unwrap());
 
-        let cache_size = matches
-            .value_of("dns_cache_size")
-            .map(|x| x.parse::<usize>().unwrap());
+        let cache_size = matches.value_of("dns_cache_size").map(|x| x.parse::<usize>().unwrap());
 
-        let protocol = matches
-            .value_of("dns_protocol")
-            .map(|x| String::from(x).into());
+        let protocol = matches.value_of("dns_protocol").map(|x| String::from(x).into());
 
         let nameservers = matches
             .value_of("dns_servers")

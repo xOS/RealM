@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use tokio::io::{AsyncRead, AsyncWrite};
 
+/// A wrapper of its underlying buffer(array, vector, unix pipe...).
 pub struct CopyBuffer<B, SR, SW> {
     pub(crate) read_done: bool,
     pub(crate) need_flush: bool,
@@ -15,6 +16,7 @@ pub struct CopyBuffer<B, SR, SW> {
 }
 
 impl<B, SR, SW> CopyBuffer<B, SR, SW> {
+    /// Constructor, take the provided buffer.
     pub const fn new(buf: B) -> Self {
         Self {
             read_done: false,
@@ -28,27 +30,16 @@ impl<B, SR, SW> CopyBuffer<B, SR, SW> {
     }
 }
 
+/// Type traits of [`CopyBuffer`].
 pub trait AsyncIOBuf {
     type StreamR: AsyncRead + AsyncWrite + Unpin;
     type StreamW: AsyncRead + AsyncWrite + Unpin;
 
-    fn poll_read_buf(
-        &mut self,
-        cx: &mut Context<'_>,
-        stream: &mut Self::StreamR,
-    ) -> Poll<Result<usize>>;
+    fn poll_read_buf(&mut self, cx: &mut Context<'_>, stream: &mut Self::StreamR) -> Poll<Result<usize>>;
 
-    fn poll_write_buf(
-        &mut self,
-        cx: &mut Context<'_>,
-        stream: &mut Self::StreamW,
-    ) -> Poll<Result<usize>>;
+    fn poll_write_buf(&mut self, cx: &mut Context<'_>, stream: &mut Self::StreamW) -> Poll<Result<usize>>;
 
-    fn poll_flush_buf(
-        &mut self,
-        cx: &mut Context<'_>,
-        stream: &mut Self::StreamW,
-    ) -> Poll<Result<()>>;
+    fn poll_flush_buf(&mut self, cx: &mut Context<'_>, stream: &mut Self::StreamW) -> Poll<Result<()>>;
 }
 
 impl<B, SR, SW> CopyBuffer<B, SR, SW>
@@ -58,6 +49,7 @@ where
     SW: AsyncRead + AsyncWrite + Unpin,
     CopyBuffer<B, SR, SW>: AsyncIOBuf,
 {
+    /// Copy data from reader to writer via buffer, asynchronously.
     pub fn poll_copy(
         &mut self,
         cx: &mut Context<'_>,
@@ -111,10 +103,7 @@ where
             // If pos larger than cap, this loop will never stop.
             // In particular, user's wrong poll_write implementation returning
             // incorrect written length may lead to thread blocking.
-            debug_assert!(
-                self.pos <= self.cap,
-                "writer returned length larger than input slice"
-            );
+            debug_assert!(self.pos <= self.cap, "writer returned length larger than input slice");
 
             // If we've written all the data and we've seen EOF, flush out the
             // data and finish the transfer.

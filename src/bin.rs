@@ -1,10 +1,10 @@
 use std::env;
 use cfg_if::cfg_if;
 
+use realm_core::dns;
+
 use realm::cmd;
-use realm::dns;
-use realm::conf::{Config, FullConf, LogConf, DnsConf};
-use realm::utils::Endpoint;
+use realm::conf::{Config, FullConf, LogConf, DnsConf, EndpointInfo};
 use realm::relay;
 use realm::ENV_CONFIG;
 
@@ -32,9 +32,7 @@ fn main() {
         match cmd::scan() {
             CmdInput::Endpoint(ep, opts) => {
                 let mut conf = FullConf::default();
-                conf.add_endpoint(ep)
-                    .apply_global_opts()
-                    .apply_cmd_opts(opts);
+                conf.add_endpoint(ep).apply_global_opts().apply_cmd_opts(opts);
                 conf
             }
             CmdInput::Config(conf, opts) => {
@@ -60,10 +58,10 @@ fn start_from_conf(full: FullConf) {
     setup_log(log_conf);
     setup_dns(dns_conf);
 
-    let endpoints: Vec<Endpoint> = endpoints_conf
+    let endpoints: Vec<EndpointInfo> = endpoints_conf
         .into_iter()
         .map(|x| x.build())
-        .inspect(|x| println!("inited: {}", &x))
+        .inspect(|x| println!("inited: {}", &x.endpoint))
         .collect();
 
     execute(endpoints);
@@ -89,19 +87,14 @@ fn setup_log(log: LogConf) {
         .unwrap_or_else(|e| panic!("failed to setup logger: {}", &e))
 }
 
-#[allow(unused_variables)]
 fn setup_dns(dns: DnsConf) {
     println!("dns: {}", &dns);
 
-    #[cfg(feature = "trust-dns")]
-    {
-        let (conf, opts) = dns.build();
-        dns::configure(conf, opts);
-        dns::build();
-    }
+    let (conf, opts) = dns.build();
+    dns::build(conf, opts);
 }
 
-fn execute(eps: Vec<Endpoint>) {
+fn execute(eps: Vec<EndpointInfo>) {
     #[cfg(feature = "multi-thread")]
     {
         tokio::runtime::Builder::new_multi_thread()
