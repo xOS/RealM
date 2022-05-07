@@ -10,7 +10,7 @@ clear
 #	WebSite: http://nan.ge
 #=================================================
 
-sh_ver="1.4.5"
+sh_ver="1.4.6"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -317,10 +317,10 @@ ${Green_font_prefix} 1.${Font_color_suffix} 不禁用  ${Green_font_prefix} 2.${
 	read -e -p "(默认：1.不禁用)：" ntcp
 	tmp=$(mktemp)
 	[[ -z "${ntcp}" ]] && ntcp="1"
-	if [[ ${tfo} == "1" ]]; then
-		jq '.network.ntcp = false' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
+	if [[ ${ntcp} == "1" ]]; then
+		jq '.network.no_tcp = false' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
 	else
-		jq '.network.ntcp = true' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
+		jq '.network.no_tcp = true' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
 	fi
 	Restart_RealM
 	echo && echo "=============================="
@@ -336,7 +336,7 @@ ${Green_font_prefix} 1.${Font_color_suffix} 关闭  ${Green_font_prefix} 2.${Fon
 	read -e -p "(默认：1.关闭)：" send_proxy
 	tmp=$(mktemp)
 	[[ -z "${send_proxy}" ]] && send_proxy="1"
-	if [[ ${zoc} == "1" ]]; then
+	if [[ ${send_proxy} == "1" ]]; then
 		jq '.network.send_proxy = false' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
 	else
 		jq '.network.send_proxy = true' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
@@ -355,7 +355,7 @@ ${Green_font_prefix} 1.${Font_color_suffix} 关闭  ${Green_font_prefix} 2.${Fon
 	read -e -p "(默认：1.关闭)：" accept_proxy
 	tmp=$(mktemp)
 	[[ -z "${accept_proxy}" ]] && accept_proxy="1"
-	if [[ ${zoc} == "1" ]]; then
+	if [[ ${accept_proxy} == "1" ]]; then
 		jq '.network.accept_proxy = false' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
 	else
 		jq '.network.accept_proxy = true' $realm_conf_path >"$tmp" && mv "$tmp" $realm_conf_path
