@@ -7,7 +7,7 @@ clear
 #	System Required: CentOS/Debian/Ubuntu
 #	Description: RealM 管理脚本
 #	Author: 翠花
-#	WebSite: http://nan.ge
+#	WebSite: https://qste.com
 #=================================================
 
 sh_ver="1.4.7"
