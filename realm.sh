@@ -10,7 +10,7 @@ clear
 #	WebSite: http://nan.ge
 #=================================================
 
-sh_ver="1.4.6"
+sh_ver="1.4.7"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -690,7 +690,7 @@ Time_Task() {
 			echo -e "请设置每多少小时重启 RealM 任务"
 			read -p "请设置小时数:
   " type_h
-			echo "0 0 */$type_h * * ? * /usr/bin/systemctl restart realm" >>/var/spool/cron/crontabs/root
+			echo "0 */$type_h * * * /usr/bin/systemctl restart realm" >>/var/spool/cron/crontabs/root
 			sync /var/spool/cron/crontabs/root
 			systemctl restart cron
 			;;
