@@ -10,7 +10,7 @@ clear
 #	WebSite: https://qste.com
 #=================================================
 
-sh_ver="1.4.7"
+sh_ver="1.4.8"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -487,14 +487,14 @@ Delete_RealM() {
 Update_Shell() {
 	echo -e "当前版本为 [ ${sh_ver} ]，开始检测最新版本..."
 	curl -s https://purge.jsdelivr.net/gh/xOS/RealM@master/realm.sh >/dev/null 2>&1
-	sh_new_ver=$(wget --no-check-certificate -qO- "https://cdn.jsdelivr.net/gh/xOS/RealM@master/realm.sh" | grep 'sh_ver="' | awk -F "=" '{print $NF}' | sed 's/\"//g' | head -1)
+	sh_new_ver=$(wget --no-check-certificate -qO- "https://fastly.jsdelivr.net/gh/xOS/RealM@master/realm.sh" | grep 'sh_ver="' | awk -F "=" '{print $NF}' | sed 's/\"//g' | head -1)
 	[[ -z ${sh_new_ver} ]] && echo -e "${Error} 检测最新版本失败 !" && start_menu
 	if [[ ${sh_new_ver} != ${sh_ver} ]]; then
 		echo -e "发现新版本[ ${sh_new_ver} ]，是否更新？[Y/n]"
 		read -p "(默认: y):" yn
 		[[ -z "${yn}" ]] && yn="y"
 		if [[ ${yn} == [Yy] ]]; then
-			wget -O realm.sh --no-check-certificate https://cdn.jsdelivr.net/gh/xOS/RealM@master/realm.sh && chmod +x realm.sh
+			wget -O realm.sh --no-check-certificate https://fastly.jsdelivr.net/gh/xOS/RealM@master/realm.sh && chmod +x realm.sh
 			echo -e "脚本已更新为最新版本[ ${sh_new_ver} ] !"
 			echo -e "3s后执行新脚本"
 			sleep 3s
