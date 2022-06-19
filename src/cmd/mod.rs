@@ -81,7 +81,7 @@ fn handle_matches(matches: ArgMatches) -> CmdInput {
 
         // get
         if let Ok((soft, hard)) = get_nofile_limit() {
-            println!("nofile limit: soft={}, hard={}", soft, hard);
+            println!("fd: soft={}, hard={}", soft, hard);
         }
     }
 
