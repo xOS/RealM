@@ -1,6 +1,6 @@
 [package]
 name = "realm"
-version = "2.3.6"
+version = "2.4.0"
 authors = ["zhboner <zhboner@gmail.com>"]
 edition = "2021"
 
@@ -8,6 +8,7 @@ edition = "2021"
 [workspace]
 members = [
     "realm_io",
+    "realm_lb",
     "realm_core",
     "realm_hook",
     "realm_syscall"
@@ -61,9 +62,10 @@ tokio = { version = "1", features = ["macros"] }
 
  
 [features]
-default = ["hook", "proxy", "multi-thread", "transport", "brutal-shutdown"]
+default = ["hook", "proxy", "balance", "multi-thread", "transport", "balance", "brutal-shutdown"]
 hook = ["realm_core/hook"]
 proxy = ["realm_core/proxy"]
+balance = ["realm_core/balance"]
 transport = ["kaminari", "realm_core/transport", "realm_core/transport-boost"]
 multi-thread = ["tokio/rt-multi-thread"]
 brutal-shutdown = ["realm_io/brutal-shutdown"]
