@@ -7,10 +7,10 @@ clear
 #	System Required: CentOS/Debian/Ubuntu
 #	Description: RealM 管理脚本
 #	Author: 翠花
-#	WebSite: https://qste.com
+#	WebSite: https://about.nange.cn
 #=================================================
 
-sh_ver="1.4.8"
+sh_ver="1.5.0"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Yellow_font_prefix="\033[0;33m"
 
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -92,9 +92,9 @@ Install_RealM() {
 	fi
 	Installation_dependency
 	echo -e "${Info} 开始安装 RealM 主程序..."
-	new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases | jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
+	new_ver=$(wget -qO- https://api.github.com/repos/zhboner/realm/releases | jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
 	mkdir /etc/realm
-	wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm $realm_bin_path
+	wget -N --no-check-certificate "https://github.com/zhboner/realm/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm $realm_bin_path
 	rm -rf realm-${arch}-unknown-linux-gnu.tar.gz
 	echo "${new_ver}" >${now_ver_file}
 
@@ -134,7 +134,7 @@ WantedBy=multi-user.target' >/etc/systemd/system/realm.service
 
 #更新 RealM
 Update_RealM() {
-	new_ver=$(wget -qO- https://api.github.com/repos/xOS/RealM/releases | jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
+	new_ver=$(wget -qO- https://api.github.com/repos/zhboner/realm/releases | jq -r '[.[] | select(.prerelease == false) | select(.draft == false) | .tag_name] | .[0]')
 	now_ver=$(cat ${now_ver_file})
 	if [[ "${now_ver}" != "${new_ver}" ]]; then
 		echo -e "${Info} 发现 RealM 已有新版本 [ ${new_ver} ]，旧版本 [ ${now_ver} ]"
@@ -142,7 +142,7 @@ Update_RealM() {
 		[[ -z "${yn}" ]] && yn="y"
 		if [[ $yn == [Yy] ]]; then
 			check_installed
-			wget -N --no-check-certificate "https://github.com/xOS/RealM/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm $realm_bin_path && systemctl restart realm
+			wget -N --no-check-certificate "https://github.com/zhboner/realm/releases/download/${new_ver}/realm-${arch}-unknown-linux-gnu.tar.gz" && tar -xvf realm-${arch}-unknown-linux-gnu.tar.gz && chmod +x realm && mv -f realm $realm_bin_path && systemctl restart realm
 			rm -rf realm-${arch}-unknown-linux-gnu.tar.gz
 			echo "${new_ver}" >${now_ver_file}
 			echo -e "${Green_font_prefix} RealM 更新成功! ${Font_color_suffix}"
@@ -486,15 +486,15 @@ Delete_RealM() {
 #更新脚本
 Update_Shell() {
 	echo -e "当前版本为 [ ${sh_ver} ]，开始检测最新版本..."
-	curl -s https://purge.jsdelivr.net/gh/xOS/RealM@master/realm.sh >/dev/null 2>&1
-	sh_new_ver=$(wget --no-check-certificate -qO- "https://fastly.jsdelivr.net/gh/xOS/RealM@master/realm.sh" | grep 'sh_ver="' | awk -F "=" '{print $NF}' | sed 's/\"//g' | head -1)
+	curl -s https://purge.jsdelivr.net/gh/xos/realm@master/realm.sh >/dev/null 2>&1
+	sh_new_ver=$(wget --no-check-certificate -qO- "https://fastly.jsdelivr.net/gh/xos/realm@master/realm.sh" | grep 'sh_ver="' | awk -F "=" '{print $NF}' | sed 's/\"//g' | head -1)
 	[[ -z ${sh_new_ver} ]] && echo -e "${Error} 检测最新版本失败 !" && start_menu
 	if [[ ${sh_new_ver} != ${sh_ver} ]]; then
 		echo -e "发现新版本[ ${sh_new_ver} ]，是否更新？[Y/n]"
 		read -p "(默认: y):" yn
 		[[ -z "${yn}" ]] && yn="y"
 		if [[ ${yn} == [Yy] ]]; then
-			wget -O realm.sh --no-check-certificate https://fastly.jsdelivr.net/gh/xOS/RealM@master/realm.sh && chmod +x realm.sh
+			wget -O realm.sh --no-check-certificate https://fastly.jsdelivr.net/gh/xos/realm@master/realm.sh && chmod +x realm.sh
 			echo -e "脚本已更新为最新版本[ ${sh_new_ver} ] !"
 			echo -e "3s后执行新脚本"
 			sleep 3s
